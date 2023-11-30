@@ -28,7 +28,7 @@ namespace NCL {
 			typedef std::function<void(std::list<QuadTreeEntry<T>>&)> QuadTreeFunc;
 
 			void Insert(T& object, const Vector3& objectPos, const Vector3& objectSize, int depthLeft, int maxSize) {
-				/*if (!CollisionDetection::AABBTest(objectPos, Vector3(position.x, 0, position.y), objectSize, Vector3(size.x, 1000.0 f, size.y))) {
+				/*if (!CollisionDetection::AABBTest(objectPos, Vector3(position.x, 0, position.y), objectSize, Vector3(size.x, 1000.0f, size.y))) {
 					return;
 				}*/
 				if (children) { // not a leaf node , just descend the tree
