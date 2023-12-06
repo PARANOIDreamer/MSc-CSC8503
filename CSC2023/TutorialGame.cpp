@@ -53,7 +53,7 @@ void TutorialGame::InitialiseAssets() {
 	sphereMesh = renderer->LoadMesh("sphere.msh");
 	charMesh = renderer->LoadMesh("goat.msh");
 	enemyMesh = renderer->LoadMesh("Keeper.msh");
-	bonusMesh = renderer->LoadMesh("apple.msh");
+	bonusMesh = renderer->LoadMesh("cube.msh");//"apple.msh");
 	capsuleMesh = renderer->LoadMesh("capsule.msh");
 
 	basicTex = renderer->LoadTexture("checkerboard.png");
@@ -177,12 +177,12 @@ void TutorialGame::UpdateKeys() {
 		world->ShuffleObjects(false);
 	}
 
-	if (lockedObject) {
+	/*if (lockedObject) {
 		LockedObjectMovement();
 	}
-	else {
+	else {*/
 		DebugObjectMovement();
-	}
+	//}
 }
 
 void TutorialGame::LockedObjectMovement() {
@@ -219,13 +219,15 @@ void TutorialGame::DebugObjectMovement() {
 		//Twist the selected object!
 		if (Window::GetKeyboard()->KeyDown(KeyCodes::LEFT)) {
 			selectionObject->GetPhysicsObject()->AddTorque(Vector3(-10, 0, 0));
+			selectionObject->GetPhysicsObject()->AddForce(Vector3(-10, 0, 0));
 		}
 
 		if (Window::GetKeyboard()->KeyDown(KeyCodes::RIGHT)) {
 			selectionObject->GetPhysicsObject()->AddTorque(Vector3(10, 0, 0));
+			selectionObject->GetPhysicsObject()->AddForce(Vector3(10, 0, 0));
 		}
 
-		if (Window::GetKeyboard()->KeyDown(KeyCodes::NUM7)) {
+		/*if (Window::GetKeyboard()->KeyDown(KeyCodes::NUM7)) {
 			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, 10, 0));
 		}
 
@@ -235,19 +237,21 @@ void TutorialGame::DebugObjectMovement() {
 
 		if (Window::GetKeyboard()->KeyDown(KeyCodes::RIGHT)) {
 			selectionObject->GetPhysicsObject()->AddTorque(Vector3(10, 0, 0));
-		}
+		}*/
 
 		if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
 			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, -10));
+			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, 0, -10));
 		}
 
 		if (Window::GetKeyboard()->KeyDown(KeyCodes::DOWN)) {
 			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, 10));
+			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, 0, 10));
 		}
 
-		if (Window::GetKeyboard()->KeyDown(KeyCodes::NUM5)) {
-			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, -10, 0));
-		}
+		//if (Window::GetKeyboard()->KeyDown(KeyCodes::NUM5)) {
+		//	selectionObject->GetPhysicsObject()->AddForce(Vector3(0, -10, 0));
+		//}
 	}
 }
 
@@ -264,13 +268,17 @@ void TutorialGame::InitWorld() {
 	world->ClearAndErase();
 	physics->Clear();
 
-	InitMixedGridWorld(15, 15, 3.5f, 3.5f);
+	//InitMixedGridWorld(15, 15, 3.5f, 3.5f);
 
-	InitGameExamples();
+	//InitGameExamples();
 	InitDefaultFloor();
-	BridgeConstraintTest();
+	//BridgeConstraintTest();
 
-	testStateObject = AddStateObjectToWorld(Vector3(0, 10, 0));
+	AddCubeToWorld(Vector3(190, -10, 0), Vector3(10, 10, 10));
+	AddSphereToWorld(Vector3(0, -17, 0), 1.0f);
+	//AddCubeToWorld(Vector3(1, 0, 0), Vector3(1, 1, 1));
+
+	//testStateObject = AddStateObjectToWorld(Vector3(0, 10, 0));
 }
 
 /*
