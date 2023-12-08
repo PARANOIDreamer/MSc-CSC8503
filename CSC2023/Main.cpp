@@ -107,7 +107,7 @@ void TestBehaviourTree() {
 				return Success;
 			}
 		}
-		return state; // will be ’ongoing’ until success
+		return state; // will be ’ongoing?until success
 		});
 	BehaviourAction* goToRoom = new BehaviourAction("Go To Room", [&](float dt, BehaviourState state) -> BehaviourState {
 		if (state == Initialise) {
@@ -121,7 +121,7 @@ void TestBehaviourTree() {
 				return Success;
 			}
 		}
-		return state; // will be ’ongoing’ until success
+		return state; // will be ’ongoing?until success
 		});
 	BehaviourAction* openDoor = new BehaviourAction("Open Door", [&](float dt, BehaviourState state) -> BehaviourState {
 		if (state == Initialise) {
@@ -230,12 +230,12 @@ int main() {
 	TutorialGame* g = new TutorialGame();
 	w->GetTimer().GetTimeDeltaSeconds(); //Clear the timer so we don't get a larget first dt!
 	
-	TestPathfinding();
+	/*TestPathfinding();
 	TestBehaviourTree();
-	TestStateMachine();
+	TestStateMachine();*/
 
 	while (w->UpdateWindow() && !Window::GetKeyboard()->KeyDown(KeyCodes::ESCAPE)) {
-		DisplayPathfinding();
+		//DisplayPathfinding();
 
 		float dt = w->GetTimer().GetTimeDeltaSeconds();
 		if (dt > 0.1f) {

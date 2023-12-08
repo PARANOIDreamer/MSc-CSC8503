@@ -26,7 +26,7 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 	physics = new PhysicsSystem(*world);
 
 	forceMagnitude = 10.0f;
-	useGravity = false;
+	useGravity = true;
 	inSelectionMode = false;
 
 	world->GetMainCamera().SetController(controller);
@@ -132,7 +132,7 @@ void TutorialGame::UpdateGame(float dt) {
 		testStateObject->Update(dt);
 	}
 
-	Debug::DrawLine(Vector3(), Vector3(0, 100, 0), Vector4(1, 0, 0, 1));
+	//Debug::DrawLine(Vector3(), Vector3(0, 100, 0), Vector4(1, 0, 0, 1));
 
 	SelectObject();
 	MoveSelectedObject();
@@ -181,7 +181,7 @@ void TutorialGame::UpdateKeys() {
 		LockedObjectMovement();
 	}
 	else {*/
-		DebugObjectMovement();
+	DebugObjectMovement();
 	//}
 }
 
@@ -257,10 +257,10 @@ void TutorialGame::DebugObjectMovement() {
 
 void TutorialGame::InitCamera() {
 	world->GetMainCamera().SetNearPlane(0.1f);
-	world->GetMainCamera().SetFarPlane(500.0f);
-	world->GetMainCamera().SetPitch(-15.0f);
-	world->GetMainCamera().SetYaw(315.0f);
-	world->GetMainCamera().SetPosition(Vector3(-60, 40, 60));
+	world->GetMainCamera().SetFarPlane(700.0f);
+	world->GetMainCamera().SetPitch(-90.0f);
+	world->GetMainCamera().SetYaw(0.0f);
+	world->GetMainCamera().SetPosition(Vector3(0, 500, 0));
 	lockedObject = nullptr;
 }
 
@@ -268,16 +268,13 @@ void TutorialGame::InitWorld() {
 	world->ClearAndErase();
 	physics->Clear();
 
-	//InitMixedGridWorld(15, 15, 3.5f, 3.5f);
-
-	//InitGameExamples();
 	InitDefaultFloor();
+	InitWall();
+	AddSphereToWorld(Vector3(-150, 7, 150), 7.0f);
+
+	//InitMixedGridWorld(15, 15, 3.5f, 3.5f);
+	//InitGameExamples();	
 	//BridgeConstraintTest();
-
-	AddCubeToWorld(Vector3(190, -10, 0), Vector3(10, 10, 10));
-	AddSphereToWorld(Vector3(0, -17, 0), 1.0f);
-	//AddCubeToWorld(Vector3(1, 0, 0), Vector3(1, 1, 1));
-
 	//testStateObject = AddStateObjectToWorld(Vector3(0, 10, 0));
 }
 
@@ -305,6 +302,24 @@ GameObject* TutorialGame::AddFloorToWorld(const Vector3& position) {
 	world->AddGameObject(floor);
 
 	return floor;
+}
+
+GameObject* TutorialGame::AddWallToWorld(const Vector3& position, Vector3 dimensions) {
+	GameObject* wall = new GameObject();
+
+	AABBVolume* volume = new AABBVolume(dimensions);
+	wall->SetBoundingVolume((CollisionVolume*)volume);
+	wall->GetTransform().SetScale(dimensions * 2).SetPosition(position);
+
+	wall->SetRenderObject(new RenderObject(&wall->GetTransform(), cubeMesh, basicTex, basicShader));
+	wall->SetPhysicsObject(new PhysicsObject(&wall->GetTransform(), wall->GetBoundingVolume()));
+
+	wall->GetPhysicsObject()->SetInverseMass(0);
+	wall->GetPhysicsObject()->InitCubeInertia();
+
+	world->AddGameObject(wall);
+
+	return wall;
 }
 
 /*
@@ -444,7 +459,67 @@ StateGameObject* TutorialGame::AddStateObjectToWorld(const Vector3& position) {
 }
 
 void TutorialGame::InitDefaultFloor() {
-	AddFloorToWorld(Vector3(0, -20, 0));
+	AddFloorToWorld(Vector3(0, -2, 0));
+}
+
+void TutorialGame::InitWall() {
+	Vector3 cubeDims = Vector3(20, 20, 20);
+	Vector3 position;
+	for (int x = 0; x < 10; ++x) {
+		position = Vector3(-180 + x * 40, 20, -180);
+		AddWallToWorld(position, cubeDims);
+		AddWallToWorld(Vector3(position.x, 20, 180), cubeDims);
+	}
+	for (int z = 0; z < 8; ++z) {
+		position = Vector3(-180, 20, -140 + z * 40);
+		AddWallToWorld(position, cubeDims);
+		AddWallToWorld(Vector3(180, 20, position.z), cubeDims);
+	}
+	cubeDims = Vector3(10, 10, 10);
+	for (int i = 0; i < 4; ++i) {
+		position = Vector3(-110, 10, 150 - i * 20);
+		AddWallToWorld(position, cubeDims);
+		AddWallToWorld(Vector3(-70, 10, position.z - 180), cubeDims);
+		AddWallToWorld(Vector3(-50, 10, position.z), cubeDims);
+		AddWallToWorld(Vector3(50, position.y, position.z - 80), cubeDims);
+		AddWallToWorld(Vector3(70, position.y, position.z - 20), cubeDims);
+		AddWallToWorld(Vector3(90, position.y, position.z - 160), cubeDims);
+		AddWallToWorld(Vector3(130, position.y, position.z - 80), cubeDims);
+		AddWallToWorld(Vector3(130, position.y, position.z - 160), cubeDims);
+	}
+	for (int i = 0; i < 3; ++i) {
+		position = Vector3(-150 + i * 20, 10, 30);
+		AddWallToWorld(position, cubeDims);
+		AddWallToWorld(Vector3(position.x + 60, 10, 30), cubeDims);
+		AddWallToWorld(Vector3(position.x + 120, 10, 30), cubeDims);
+		AddWallToWorld(Vector3(position.x + 160, 10, 130), cubeDims);
+		AddWallToWorld(Vector3(position.x + 240, 10, 130), cubeDims);
+		AddWallToWorld(Vector3(position.x + 40, 10, -110), cubeDims);
+		AddWallToWorld(Vector3(position.x + 100, 10, -70), cubeDims);
+		AddWallToWorld(Vector3(position.x + 160, 10, -70), cubeDims);
+		AddWallToWorld(Vector3(position.x + 180, 10, -10), cubeDims);
+		AddWallToWorld(Vector3(position.x + 200, 10, -130), cubeDims);
+	}
+	AddWallToWorld(Vector3(-150, 10, 110), cubeDims);
+	AddWallToWorld(Vector3(-130, 10, 50), cubeDims);
+	AddWallToWorld(Vector3(-130, 10, -110), cubeDims);
+	AddWallToWorld(Vector3(-130, 10, -130), cubeDims);
+	AddWallToWorld(Vector3(-90, 10, -150), cubeDims);
+	AddWallToWorld(Vector3(-30, 10, 130), cubeDims);
+	AddWallToWorld(Vector3(-30, 10, 10), cubeDims);
+	AddWallToWorld(Vector3(-30, 10, -10), cubeDims);
+	AddWallToWorld(Vector3(10, 10, 50), cubeDims);
+	AddWallToWorld(Vector3(10, 10, 70), cubeDims);
+	AddWallToWorld(Vector3(10, 10, -90), cubeDims);
+	AddWallToWorld(Vector3(10, 10, -110), cubeDims);
+	AddWallToWorld(Vector3(70, 10, -70), cubeDims);
+	AddWallToWorld(Vector3(90, 10, 70), cubeDims);
+	AddWallToWorld(Vector3(90, 10, 30), cubeDims);
+	AddWallToWorld(Vector3(90, 10, -130), cubeDims);
+	AddWallToWorld(Vector3(90, 10, -150), cubeDims);
+	AddWallToWorld(Vector3(110, 10, 30), cubeDims);
+	AddWallToWorld(Vector3(130, 10, 90), cubeDims);
+	AddWallToWorld(Vector3(130, 10, 110), cubeDims);
 }
 
 void TutorialGame::InitGameExamples() {
@@ -586,7 +661,7 @@ void TutorialGame::BridgeConstraintTest() {
 	float maxDistance = 30; // constraint distance
 	float cubeDistance = 20; // distance between links
 
-	Vector3 startPos = Vector3(100, 100, 100);
+	Vector3 startPos = Vector3(100, 300, 100);
 	//Vector3 startPos = Vector3(500, 500, 500);
 
 	GameObject* start = AddCubeToWorld(startPos + Vector3(0, 0, 0), cubeSize, 0);
