@@ -1,4 +1,4 @@
-#include "Window.h"
+ï»¿#include "Window.h"
 
 #include "Debug.h"
 
@@ -107,7 +107,7 @@ void TestBehaviourTree() {
 				return Success;
 			}
 		}
-		return state; // will be ’ongoing?until success
+		return state; // will be ï¿½ongoing?until success
 		});
 	BehaviourAction* goToRoom = new BehaviourAction("Go To Room", [&](float dt, BehaviourState state) -> BehaviourState {
 		if (state == Initialise) {
@@ -121,7 +121,7 @@ void TestBehaviourTree() {
 				return Success;
 			}
 		}
-		return state; // will be ’ongoing?until success
+		return state; // will be ï¿½ongoing?until success
 		});
 	BehaviourAction* openDoor = new BehaviourAction("Open Door", [&](float dt, BehaviourState state) -> BehaviourState {
 		if (state == Initialise) {
@@ -229,7 +229,7 @@ int main() {
 
 	TutorialGame* g = new TutorialGame();
 	w->GetTimer().GetTimeDeltaSeconds(); //Clear the timer so we don't get a larget first dt!
-	
+
 	/*TestPathfinding();
 	TestBehaviourTree();
 	TestStateMachine();*/
