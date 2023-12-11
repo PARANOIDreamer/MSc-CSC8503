@@ -40,6 +40,7 @@ namespace NCL {
 
 			void InitDefaultFloor();
 			void InitWall();
+			void InitDoor();
 
 			bool SelectObject();
 			void MoveSelectedObject();
@@ -54,12 +55,14 @@ namespace NCL {
 			GameObject* AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f, std::string name = "");
 
 			GameObject* AddGoatToWorld(const Vector3& position);
-			GameObject* AddEnemyToWorld(const Vector3& position);
-			GameObject* AddBonusToWorld(const Vector3& position);
+			StateGameObject* AddEnemyToWorld(const Vector3& position);
+			void AddBonusToWorld();
 			GameObject* AddWallToWorld(const Vector3& position, Vector3 dimensions);
-			void AddDoorToWorld(Vector3 startpos, Vector3 doorpos, Vector3 size);
+			void AddDoorToWorld(Vector3 startpos, Vector3 doorpos, Vector3 size,int i);
+			void DoorConstraint(int i);
 			void CatchGoat();
 			void AddHurdleToWorld(const Vector3& position);
+			void PhysicsUpdate();
 
 #ifdef USEVULKAN
 			GameTechVulkanRenderer* renderer;
@@ -92,20 +95,23 @@ namespace NCL {
 
 			//Coursework Additional functionality	
 			GameObject* lockedObject = nullptr;
-			Vector3 lockedOffset = Vector3(0, 14, 20);
+			Vector3 lockedOffset = Vector3(0, 20, 0);
 			void LockCameraToObject(GameObject* o) {
 				lockedObject = o;
 			}
 
 			GameObject* objClosest = nullptr;
 
-			StateGameObject* AddStateObjectToWorld(const Vector3& position);
+			StateGameObject* AddStateObjectToWorld(const Vector3& position, bool vert);
 			StateGameObject* testStateObject;
 
 			GameObject* characterRole;
 			GameObject* goat;
 			GameObject* hurdle;
-			PositionConstraint * hook;
+			GameObject* door[4][2];
+			GameObject* bonus[4];
+			PositionConstraint* hook;
+			PositionConstraint * doorLink[4];
 		};
 	}
 }

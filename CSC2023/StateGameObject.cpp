@@ -12,11 +12,17 @@ StateGameObject::StateGameObject() {
 	stateMachine = new StateMachine();
 
 	State* stateA = new State([&](float dt) -> void {
-		this->MoveLeft(dt);
+		if (vert)
+			this->MoveUp(dt);
+		else
+			this->MoveLeft(dt);
 		});
 
 	State* stateB = new State([&](float dt) -> void {
-		this->MoveRight(dt);
+		if (vert)
+			this->MoveDown(dt);
+		else
+			this->MoveRight(dt);
 		});
 
 	stateMachine->AddState(stateA);
@@ -40,11 +46,21 @@ void StateGameObject::Update(float dt) {
 }
 
 void StateGameObject::MoveLeft(float dt) {
-	GetPhysicsObject()->AddForce({ -100,0,0 });
+	GetPhysicsObject()->AddForce({ -50,0,0 });
 	counter += dt;
 }
 
 void StateGameObject::MoveRight(float dt) {
-	GetPhysicsObject()->AddForce({ 100,0,0 });
+	GetPhysicsObject()->AddForce({ 50,0,0 });
+	counter -= dt;
+}
+
+void StateGameObject::MoveUp(float dt) {
+	GetPhysicsObject()->AddForce({ 0,0,100 });
+	counter += dt;
+}
+
+void StateGameObject::MoveDown(float dt) {
+	GetPhysicsObject()->AddForce({ 0,0,-100 });
 	counter -= dt;
 }

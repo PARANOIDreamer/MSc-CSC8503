@@ -10,13 +10,19 @@ namespace NCL {
             ~StateGameObject();
 
             virtual void Update(float dt);
+            void SetVert(bool v) {
+                vert = v;
+            }
 
         protected:
             void MoveLeft(float dt);
             void MoveRight(float dt);
+            void MoveUp(float dt);
+            void MoveDown(float dt);
 
             StateMachine* stateMachine;
             float counter;
+            bool vert = false;
         };
     }
 }

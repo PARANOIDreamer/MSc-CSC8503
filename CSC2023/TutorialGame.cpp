@@ -93,8 +93,8 @@ void TutorialGame::UpdateGame(float dt) {
 		Vector3 angles = q.ToEuler(); //nearly there now!
 
 		world->GetMainCamera().SetPosition(camPos);
-		world->GetMainCamera().SetPitch(angles.x);
-		world->GetMainCamera().SetYaw(angles.y);
+		//world->GetMainCamera().SetPitch(angles.x);
+		//world->GetMainCamera().SetYaw(angles.y);
 	}
 
 	UpdateKeys();
@@ -133,18 +133,13 @@ void TutorialGame::UpdateGame(float dt) {
 	}
 
 	//Debug::DrawLine(Vector3(), Vector3(0, 100, 0), Vector4(1, 0, 0, 1));
-	if (physics->gameRun->GetCatchgoat() != physics->gameRun->GetHookgoat()) {
-		if (physics->gameRun->GetCatchgoat() == 1) {
-			goat->GetPhysicsObject()->SetInverseMass(5);
-			CatchGoat();
-			physics->gameRun->SetHookgoat(1);
-		}
-		else {
-			world->RemoveConstraint(hook, true);
-			goat->GetPhysicsObject()->SetInverseMass(0.1);
-			hurdle->GetPhysicsObject()->SetInverseMass(1);
-			physics->gameRun->SetHookgoat(0);
-		}
+	
+	PhysicsUpdate();
+
+	int time = 120 - physics->gameRun->GetTime();
+	Debug::Print("Time:" + std::to_string(time), Vector2(5, 5), Debug::RED);
+	if (physics->gameRun->GetOntime() == 1) {
+		physics->gameRun->SetTime(dt);
 	}
 
 	SelectObject();
@@ -260,29 +255,29 @@ void TutorialGame::InitWorld() {
 
 	InitDefaultFloor();
 	InitWall();
-	//InitCharacter(Vector3(-150, 6, 150), 6.0f);
-	InitCharacter(Vector3(150, 6, 130), 6.0f);
+	InitCharacter(Vector3(-150, 6, 150), 6.0f);
+	//InitCharacter(Vector3(150, 6, 130), 6.0f);
 	AddGoatToWorld(Vector3(150, 5, -150));
-	//CatchGoat();
-	AddCubeToWorld(Vector3(-140, -0.8, 150), Vector3(20,1,10), 0,"start");
+
+	AddCubeToWorld(Vector3(-140, -0.8, 150), Vector3(20, 1, 10), 0, "start");
 	AddCubeToWorld(Vector3(150, -0.9, 140), Vector3(10, 1, 20), 0, "button");
 	AddCubeToWorld(Vector3(-40, 10, 150), Vector3(0.1, 10, 10), 0, "wall");
 	AddHurdleToWorld(Vector3(130, 10, 150));
 	//AddSphereToWorld(Vector3(-120, 6, -80), 6.0f);
-
 	//InitMixedGridWorld(15, 15, 3.5f, 3.5f);
 	//InitGameExamples();
-	// 	
 	//BridgeConstraintTest();
 
-	/*Vector3 cube = Vector3(8, 8, 8);
+	InitDoor();
+	AddBonusToWorld();
+	Vector3 cube = Vector3(8, 8, 8);
 	AddCubeToWorld(Vector3(-60, 8, -140), cube, 1);
 	AddCubeToWorld(Vector3(-40, 8, -100), cube,  1);
 	AddCubeToWorld(Vector3(-20, 8, -120), cube, 1);
 	AddCubeToWorld(Vector3(20, 8, -140), cube,  1);
-	AddCubeToWorld(Vector3(-20, 8, -160), cube, 1);*/
+	AddCubeToWorld(Vector3(-20, 8, -160), cube, 1);
 
-	//testStateObject = AddStateObjectToWorld(Vector3(0, 10, 0));
+	testStateObject = AddStateObjectToWorld(Vector3(50, 5, -40),false);
 }
 
 /*
@@ -368,7 +363,7 @@ GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimens
 		.SetPosition(position)
 		.SetScale(dimensions * 2);
 
-	cube->SetRenderObject(new RenderObject(&cube->GetTransform(), cubeMesh, basicTex, basicShader));
+	cube->SetRenderObject(new RenderObject(&cube->GetTransform(), cubeMesh, nullptr, basicShader));
 	cube->SetPhysicsObject(new PhysicsObject(&cube->GetTransform(), cube->GetBoundingVolume()));
 
 	cube->GetPhysicsObject()->SetInverseMass(inverseMass);
@@ -400,25 +395,23 @@ GameObject* TutorialGame::AddGoatToWorld(const Vector3& position) {
 
 	goat->GetPhysicsObject()->SetInverseMass(inverseMass);
 	goat->GetPhysicsObject()->InitSphereInertia();
-	goat ->SetName("goat");
+	goat->SetName("goat");
 
 	world->AddGameObject(goat);
 
 	return goat;
 }
 
-GameObject* TutorialGame::AddEnemyToWorld(const Vector3& position) {
-	float meshSize = 3.0f;
+StateGameObject* TutorialGame::AddEnemyToWorld(const Vector3& position) {
+	float meshSize = 10.0f;
 	float inverseMass = 0.5f;
 
-	GameObject* character = new GameObject();
+	StateGameObject* character = new StateGameObject();
 
 	AABBVolume* volume = new AABBVolume(Vector3(0.3f, 0.9f, 0.3f) * meshSize);
 	character->SetBoundingVolume((CollisionVolume*)volume);
 
-	character->GetTransform()
-		.SetScale(Vector3(meshSize, meshSize, meshSize))
-		.SetPosition(position);
+	character->GetTransform().SetScale(Vector3(meshSize, meshSize, meshSize)).SetPosition(position);
 
 	character->SetRenderObject(new RenderObject(&character->GetTransform(), enemyMesh, nullptr, basicShader));
 	character->SetPhysicsObject(new PhysicsObject(&character->GetTransform(), character->GetBoundingVolume()));
@@ -426,47 +419,58 @@ GameObject* TutorialGame::AddEnemyToWorld(const Vector3& position) {
 	character->GetPhysicsObject()->SetInverseMass(inverseMass);
 	character->GetPhysicsObject()->InitSphereInertia();
 
+	character->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
+	character->SetName("enemy");
+
 	world->AddGameObject(character);
 
 	return character;
 }
 
-GameObject* TutorialGame::AddBonusToWorld(const Vector3& position) {
-	GameObject* apple = new GameObject();
+void TutorialGame::AddBonusToWorld() {
+	Vector3 position[4] = { Vector3(-30,5,110),Vector3(-150,5,10),Vector3(150,5,0),Vector3(110,5,-50) };
+	for (int i = 0; i < 4; i++) {
+		bonus[i] = new GameObject();
+		std::string name = "bonus" + std::to_string(i);
+		SphereVolume* volume = new SphereVolume(5);
+		bonus[i]->SetBoundingVolume((CollisionVolume*)volume);
+		bonus[i]->GetTransform().SetScale(Vector3(5, 5, 5)).SetPosition(position[i]);
 
-	SphereVolume* volume = new SphereVolume(0.5f);
-	apple->SetBoundingVolume((CollisionVolume*)volume);
-	apple->GetTransform()
-		.SetScale(Vector3(2, 2, 2))
-		.SetPosition(position);
+		bonus[i]->SetRenderObject(new RenderObject(&bonus[i]->GetTransform(), sphereMesh, nullptr, basicShader));
+		bonus[i]->SetPhysicsObject(new PhysicsObject(&bonus[i]->GetTransform(), bonus[i]->GetBoundingVolume()));
 
-	apple->SetRenderObject(new RenderObject(&apple->GetTransform(), bonusMesh, nullptr, basicShader));
-	apple->SetPhysicsObject(new PhysicsObject(&apple->GetTransform(), apple->GetBoundingVolume()));
+		bonus[i]->GetPhysicsObject()->SetInverseMass(0);
+		bonus[i]->GetPhysicsObject()->InitSphereInertia();
+		bonus[i]->SetName(name);
+		bonus[i]->GetRenderObject()->SetColour(Vector4(1, 1, 0, 1));
 
-	apple->GetPhysicsObject()->SetInverseMass(1.0f);
-	apple->GetPhysicsObject()->InitSphereInertia();
-
-	world->AddGameObject(apple);
-
-	return apple;
+		world->AddGameObject(bonus[i]);
+	}
 }
 
-StateGameObject* TutorialGame::AddStateObjectToWorld(const Vector3& position) {
-	StateGameObject* apple = new StateGameObject();
+StateGameObject* TutorialGame::AddStateObjectToWorld(const Vector3& position, bool vert) {
+	float meshSize = 5.0f;
+	float inverseMass = 0.5f;
 
-	SphereVolume* volume = new SphereVolume(0.5f);
-	apple->SetBoundingVolume((CollisionVolume*)volume);
-	apple->GetTransform().SetScale(Vector3(2, 2, 2)).SetPosition(position);
+	StateGameObject* character = new StateGameObject();
 
-	apple->SetRenderObject(new RenderObject(&apple->GetTransform(), bonusMesh, nullptr, basicShader));
-	apple->SetPhysicsObject(new PhysicsObject(&apple->GetTransform(), apple->GetBoundingVolume()));
+	SphereVolume* volume = new SphereVolume(meshSize);
+	character->SetBoundingVolume((CollisionVolume*)volume);
 
-	apple->GetPhysicsObject()->SetInverseMass(1.0f);
-	apple->GetPhysicsObject()->InitSphereInertia();
+	character->GetTransform().SetScale(Vector3(meshSize, meshSize, meshSize)).SetPosition(position);
 
-	world->AddGameObject(apple);
+	character->SetRenderObject(new RenderObject(&character->GetTransform(), sphereMesh, nullptr, basicShader));
+	character->SetPhysicsObject(new PhysicsObject(&character->GetTransform(), character->GetBoundingVolume()));
 
-	return apple;
+	character->GetPhysicsObject()->SetInverseMass(inverseMass);
+	character->GetPhysicsObject()->InitSphereInertia();
+	character->SetVert(vert);
+	character->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
+	character->SetName("enemy");
+
+	world->AddGameObject(character);
+
+	return character;
 }
 
 void TutorialGame::InitDefaultFloor() {
@@ -486,7 +490,7 @@ void TutorialGame::InitCharacter(const Vector3& position, float radius, float in
 
 	characterRole->GetPhysicsObject()->SetInverseMass(inverseMass);
 	characterRole->GetPhysicsObject()->InitSphereInertia();
-
+	characterRole->GetRenderObject()->SetColour(Vector4(1, 1, 0, 1));
 	characterRole->SetName("role");
 
 	world->AddGameObject(characterRole);
@@ -554,8 +558,8 @@ void TutorialGame::InitWall() {
 
 void TutorialGame::InitGameExamples() {
 	AddGoatToWorld(Vector3(0, 5, 0));
-	AddEnemyToWorld(Vector3(5, 5, 0));
-	AddBonusToWorld(Vector3(10, 5, 0));
+	//AddEnemyToWorld(Vector3(5, 5, 0));
+	//AddBonusToWorld(Vector3(10, 5, 0));
 }
 
 void TutorialGame::InitSphereGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, float radius) {
@@ -614,12 +618,20 @@ bool TutorialGame::SelectObject() {
 			Window::GetWindow()->LockMouseToWindow(true);
 		}
 	}
+	if (Window::GetKeyboard()->KeyPressed(NCL::KeyCodes::L)) {
+		if (lockedObject == characterRole) {
+			InitCamera();
+		}
+		else {
+			lockedObject = characterRole;
+		}
+	}
 	if (inSelectionMode) {
-		Debug::Print("Press Q to change to camera mode!", Vector2(5, 85));
+		Debug::Print("select mode", Vector2(5, 85));
 
 		if (Window::GetMouse()->ButtonDown(NCL::MouseButtons::Left)) {
 			if (selectionObject) {	//set colour to deselected;
-				selectionObject->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
+				//selectionObject->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
 				selectionObject = nullptr;
 			}
 
@@ -628,27 +640,16 @@ bool TutorialGame::SelectObject() {
 			RayCollision closestCollision;
 			if (world->Raycast(ray, closestCollision, true)) {
 				selectionObject = (GameObject*)closestCollision.node;
-
-				selectionObject->GetRenderObject()->SetColour(Vector4(0, 1, 0, 1));
+				//selectionObject->GetRenderObject()->SetColour(Vector4(0, 1, 0, 1));
 				return true;
 			}
 			else {
 				return false;
 			}
 		}
-		if (Window::GetKeyboard()->KeyPressed(NCL::KeyCodes::L)) {
-			if (selectionObject) {
-				if (lockedObject == selectionObject) {
-					lockedObject = nullptr;
-				}
-				else {
-					lockedObject = selectionObject;
-				}
-			}
-		}
 	}
 	else {
-		Debug::Print("Press Q to change to select mode!", Vector2(5, 85));
+		Debug::Print("camera mode", Vector2(5, 85));
 	}
 	return false;
 }
@@ -684,47 +685,46 @@ void TutorialGame::MoveSelectedObject() {
 }
 
 void TutorialGame::BridgeConstraintTest() {
-	//Vector3 cubeSize = Vector3(8, 8, 8);
+	Vector3 cubeSize = Vector3(8, 8, 8);
 
-	//float invCubeMass = 5; // how heavy the middle pieces are
-	//int numLinks = 10;
-	//float maxDistance = 30; // constraint distance
-	//float cubeDistance = 20; // distance between links
+	float invCubeMass = 5; // how heavy the middle pieces are
+	int numLinks = 10;
+	float maxDistance = 30; // constraint distance
+	float cubeDistance = 20; // distance between links
 
-	//Vector3 startPos = Vector3(100, 300, 100);
-	////Vector3 startPos = Vector3(500, 500, 500);
+	Vector3 startPos = Vector3(100, 300, 100);
+	//Vector3 startPos = Vector3(500, 500, 500);
 
-	//GameObject* start = AddCubeToWorld(startPos + Vector3(0, 0, 0), cubeSize, 0);
-	//GameObject* end = AddCubeToWorld(startPos + Vector3((numLinks + 2) * cubeDistance, 0, 0), cubeSize, 0);
+	GameObject* start = AddCubeToWorld(startPos + Vector3(0, 0, 0), cubeSize, 0);
+	GameObject* end = AddCubeToWorld(startPos + Vector3((numLinks + 2) * cubeDistance, 0, 0), cubeSize, 0);
 
-	//GameObject* previous = start;
+	GameObject* previous = start;
 
-	//for (int i = 0; i < numLinks; ++i) {
-	//	GameObject* block = AddCubeToWorld(startPos + Vector3((i + 1) * cubeDistance, 0, 0), cubeSize, invCubeMass);
-	//	PositionConstraint* constraint = new PositionConstraint(previous, block, maxDistance);
-	//	world->AddConstraint(constraint);
-	//	previous = block;
-	//}
-	//PositionConstraint* constraint = new PositionConstraint(previous, end, maxDistance);
-	//world->AddConstraint(constraint);
-	
-	AddDoorToWorld(Vector3(10, 10, 110), Vector3(0, 0, -20), Vector3(3, 10, 10));
-	AddDoorToWorld(Vector3(-150, 10, -50), Vector3(20, 0, 0), Vector3(10, 10, 3));
-	AddDoorToWorld(Vector3(-90, 10, -50), Vector3(-20, 0, 0), Vector3(10, 10, 3));
-	AddDoorToWorld(Vector3(90, 10, -110), Vector3(0, 0, 20),Vector3(3, 10, 10));
+	for (int i = 0; i < numLinks; ++i) {
+		GameObject* block = AddCubeToWorld(startPos + Vector3((i + 1) * cubeDistance, 0, 0), cubeSize, invCubeMass);
+		PositionConstraint* constraint = new PositionConstraint(previous, block, maxDistance);
+		world->AddConstraint(constraint);
+		previous = block;
+	}
+	PositionConstraint* constraint = new PositionConstraint(previous, end, maxDistance);
+	world->AddConstraint(constraint);
 }
 
-void TutorialGame::AddDoorToWorld(Vector3 startpos, Vector3 doorpos, Vector3 size) {
+void TutorialGame::InitDoor() {
+	AddDoorToWorld(Vector3(10, 10, 110), Vector3(0, 0, -20), Vector3(3, 10, 10),0);
+	AddDoorToWorld(Vector3(-150, 10, -50), Vector3(20, 0, 0), Vector3(10, 10, 3),1);
+	AddDoorToWorld(Vector3(-90, 10, -50), Vector3(-20, 0, 0), Vector3(10, 10, 3),2);
+	AddDoorToWorld(Vector3(90, 10, -110), Vector3(0, 0, 20), Vector3(3, 10, 10),3);
+}
+
+void TutorialGame::AddDoorToWorld(Vector3 startpos, Vector3 doorpos, Vector3 size,int i) {
 	Vector3 cubeSize = Vector3(10, 10, 10);
 	Vector3 doorSize = size;
-	float invCubeMass = 5; // how heavy the middle pieces are
-	float maxDistance = 25; // constraint distance
 	float cubeDistance = 20; // distance between links
 	Vector3 startPos = startpos;
-	GameObject* start = AddWallToWorld(startPos, cubeSize);
-	GameObject* block = AddCubeToWorld(startPos + doorpos, doorSize, invCubeMass);
-	PositionConstraint* constraint = new PositionConstraint(start, block, maxDistance);
-	world->AddConstraint(constraint);
+	std::string name = "door" + std::to_string(i);
+	door[i][0] = AddWallToWorld(startPos, cubeSize);
+	door[i][1] = AddCubeToWorld(startPos + doorpos, doorSize, 0,name);
 }
 
 void TutorialGame::CatchGoat() {
@@ -751,4 +751,49 @@ void TutorialGame::AddHurdleToWorld(const Vector3& position) {
 	hurdle->SetName("cube");
 
 	world->AddGameObject(hurdle);
+}
+
+void TutorialGame::DoorConstraint(int i) {
+	door[i][1]->GetPhysicsObject()->SetInverseMass(5);
+	doorLink[i] = new PositionConstraint(door[i][0], door[i][1], 25);
+	world->AddConstraint(doorLink[i]);
+}
+
+void TutorialGame::PhysicsUpdate() {
+	if (physics->gameRun->GetCatchgoat() != physics->gameRun->GetHookgoat()) {
+		if (physics->gameRun->GetCatchgoat() == 1) {
+			goat->GetPhysicsObject()->SetInverseMass(5);
+			CatchGoat();
+			physics->gameRun->SetHookgoat(1);
+		}
+		else {
+			world->RemoveConstraint(hook, true);
+			goat->GetPhysicsObject()->SetInverseMass(0.1);
+			hurdle->GetPhysicsObject()->SetInverseMass(1);
+			physics->gameRun->SetHookgoat(0);
+		}
+	}
+	for (int i = 0; i < 4; i++) {
+		if (physics->gameRun->GetLockdoor(i) == 1) {
+			DoorConstraint(i);
+			physics->gameRun->SetLockdoor(i, 2);
+		}
+		if (physics->gameRun->GetLockdoor(i) == 3) {
+			world->RemoveConstraint(doorLink[i], true);
+			physics->gameRun->SetLockdoor(i, 4);
+		}
+	}
+	int obj = 4;
+	for (int i = 0; i < 4; i++) {
+		if (physics->gameRun->bonus[i] == 1) {
+			obj -= 1;
+			if (bonus[i]!=nullptr) {
+				world->RemoveGameObject(bonus[i]);
+				bonus[i] = nullptr;
+				physics->gameRun->AddScore((i + 1) * 10);
+			}
+		}
+	}
+	Debug::Print("Score:" + std::to_string(physics->gameRun->GetScore()), Vector2(50, 5), Debug::RED);
+	Debug::Print("Destroyable:" + std::to_string(obj), Vector2(70, 5), Debug::RED);
 }

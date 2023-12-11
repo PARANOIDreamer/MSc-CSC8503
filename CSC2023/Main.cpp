@@ -222,8 +222,7 @@ int main() {
 	if (!w->HasInitialised()) {
 		return -1;
 	}
-
-	//TestPushdownAutomata(w);
+	
 	w->ShowOSPointer(false);
 	w->LockMouseToWindow(true);
 
@@ -233,6 +232,8 @@ int main() {
 	/*TestPathfinding();
 	TestBehaviourTree();
 	TestStateMachine();*/
+
+//TestPushdownAutomata(w);
 
 	while (w->UpdateWindow() && !Window::GetKeyboard()->KeyDown(KeyCodes::ESCAPE)) {
 		//DisplayPathfinding();
