@@ -93,4 +93,3 @@ namespace NCL::CSC8503 {
 		Vector3 broadphaseAABB;
 	};
 }
-

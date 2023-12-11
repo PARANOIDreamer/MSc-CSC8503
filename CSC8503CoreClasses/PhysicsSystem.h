@@ -4,7 +4,7 @@
 
 namespace NCL {
 	namespace CSC8503 {
-		class PhysicsSystem	{
+		class PhysicsSystem {
 		public:
 			PhysicsSystem(GameWorld& g);
 			~PhysicsSystem();
@@ -22,7 +22,7 @@ namespace NCL {
 			}
 
 			void SetGravity(const Vector3& g);
-			
+
 			Feature* gameRun;
 
 		protected:
@@ -40,7 +40,7 @@ namespace NCL {
 			void UpdateCollisionList();
 			void UpdateObjectAABBs();
 
-			void ImpulseResolveCollision(GameObject& a , GameObject&b, CollisionDetection::ContactPoint& p) const;
+			void ImpulseResolveCollision(GameObject& a, GameObject& b, CollisionDetection::ContactPoint& p) const;
 
 			GameWorld& gameWorld;
 
@@ -52,9 +52,8 @@ namespace NCL {
 			std::set<CollisionDetection::CollisionInfo> allCollisions;
 			std::set<CollisionDetection::CollisionInfo> broadphaseCollisions;
 			std::vector<CollisionDetection::CollisionInfo> broadphaseCollisionsVec;
-			bool useBroadPhase		= true;
-			int numCollisionFrames	= 5;
+			bool useBroadPhase = true;
+			int numCollisionFrames = 5;
 		};
 	}
 }
-
