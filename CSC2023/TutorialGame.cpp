@@ -4,7 +4,6 @@
 #include "RenderObject.h"
 #include "TextureLoader.h"
 
-#include "PositionConstraint.h"
 #include "OrientationConstraint.h"
 #include "StateGameObject.h"
 
@@ -99,6 +98,7 @@ void TutorialGame::UpdateGame(float dt) {
 	}
 
 	UpdateKeys();
+	physics->UseGravity(useGravity);
 
 	if (useGravity) {
 		Debug::Print("(G)ravity on", Vector2(5, 95), Debug::RED);
@@ -133,6 +133,19 @@ void TutorialGame::UpdateGame(float dt) {
 	}
 
 	//Debug::DrawLine(Vector3(), Vector3(0, 100, 0), Vector4(1, 0, 0, 1));
+	if (physics->gameRun->GetCatchgoat() != physics->gameRun->GetHookgoat()) {
+		if (physics->gameRun->GetCatchgoat() == 1) {
+			goat->GetPhysicsObject()->SetInverseMass(5);
+			CatchGoat();
+			physics->gameRun->SetHookgoat(1);
+		}
+		else {
+			world->RemoveConstraint(hook, true);
+			goat->GetPhysicsObject()->SetInverseMass(0.1);
+			hurdle->GetPhysicsObject()->SetInverseMass(1);
+			physics->gameRun->SetHookgoat(0);
+		}
+	}
 
 	SelectObject();
 	MoveSelectedObject();
@@ -157,7 +170,7 @@ void TutorialGame::UpdateKeys() {
 
 	if (Window::GetKeyboard()->KeyPressed(KeyCodes::G)) {
 		useGravity = !useGravity; //Toggle gravity!
-		physics->UseGravity(useGravity);
+		//physics->UseGravity(useGravity);
 	}
 	//Running certain physics updates in a consistent order might cause some
 	//bias in the calculations - the same objects might keep 'winning' the constraint
@@ -214,44 +227,21 @@ void TutorialGame::LockedObjectMovement() {
 }
 
 void TutorialGame::DebugObjectMovement() {
-	//If we've selected an object, we can manipulate it with some key presses
-	if (inSelectionMode && selectionObject) {
-		//Twist the selected object!
-		if (Window::GetKeyboard()->KeyDown(KeyCodes::LEFT)) {
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(-10, 0, 0));
-			selectionObject->GetPhysicsObject()->AddForce(Vector3(-10, 0, 0));
-		}
-
-		if (Window::GetKeyboard()->KeyDown(KeyCodes::RIGHT)) {
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(10, 0, 0));
-			selectionObject->GetPhysicsObject()->AddForce(Vector3(10, 0, 0));
-		}
-
-		/*if (Window::GetKeyboard()->KeyDown(KeyCodes::NUM7)) {
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, 10, 0));
-		}
-
-		if (Window::GetKeyboard()->KeyDown(KeyCodes::NUM8)) {
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, -10, 0));
-		}
-
-		if (Window::GetKeyboard()->KeyDown(KeyCodes::RIGHT)) {
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(10, 0, 0));
-		}*/
-
-		if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
-			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, -10));
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, 0, -10));
-		}
-
-		if (Window::GetKeyboard()->KeyDown(KeyCodes::DOWN)) {
-			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, 10));
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, 0, 10));
-		}
-
-		//if (Window::GetKeyboard()->KeyDown(KeyCodes::NUM5)) {
-		//	selectionObject->GetPhysicsObject()->AddForce(Vector3(0, -10, 0));
-		//}
+	if (Window::GetKeyboard()->KeyDown(KeyCodes::LEFT)) {
+		characterRole->GetPhysicsObject()->AddTorque(Vector3(-10, 0, 0));
+		characterRole->GetPhysicsObject()->AddForce(Vector3(-10, 0, 0));
+	}
+	if (Window::GetKeyboard()->KeyDown(KeyCodes::RIGHT)) {
+		characterRole->GetPhysicsObject()->AddTorque(Vector3(10, 0, 0));
+		characterRole->GetPhysicsObject()->AddForce(Vector3(10, 0, 0));
+	}
+	if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
+		characterRole->GetPhysicsObject()->AddForce(Vector3(0, 0, -10));
+		characterRole->GetPhysicsObject()->AddTorque(Vector3(0, 0, -10));
+	}
+	if (Window::GetKeyboard()->KeyDown(KeyCodes::DOWN)) {
+		characterRole->GetPhysicsObject()->AddForce(Vector3(0, 0, 10));
+		characterRole->GetPhysicsObject()->AddTorque(Vector3(0, 0, 10));
 	}
 }
 
@@ -270,19 +260,28 @@ void TutorialGame::InitWorld() {
 
 	InitDefaultFloor();
 	InitWall();
-	AddSphereToWorld(Vector3(-150, 6, 150), 6.0f);
-	AddSphereToWorld(Vector3(-120, 6, -80), 6.0f);
+	//InitCharacter(Vector3(-150, 6, 150), 6.0f);
+	InitCharacter(Vector3(150, 6, 130), 6.0f);
+	AddGoatToWorld(Vector3(150, 5, -150));
+	//CatchGoat();
+	AddCubeToWorld(Vector3(-140, -0.8, 150), Vector3(20,1,10), 0,"start");
+	AddCubeToWorld(Vector3(150, -0.9, 140), Vector3(10, 1, 20), 0, "button");
+	AddCubeToWorld(Vector3(-40, 10, 150), Vector3(0.1, 10, 10), 0, "wall");
+	AddHurdleToWorld(Vector3(130, 10, 150));
+	//AddSphereToWorld(Vector3(-120, 6, -80), 6.0f);
 
 	//InitMixedGridWorld(15, 15, 3.5f, 3.5f);
-	//InitGameExamples();	
-	BridgeConstraintTest();
+	//InitGameExamples();
+	// 	
+	//BridgeConstraintTest();
 
-	Vector3 cube = Vector3(8, 8, 8);
+	/*Vector3 cube = Vector3(8, 8, 8);
 	AddCubeToWorld(Vector3(-60, 8, -140), cube, 1);
 	AddCubeToWorld(Vector3(-40, 8, -100), cube,  1);
 	AddCubeToWorld(Vector3(-20, 8, -120), cube, 1);
 	AddCubeToWorld(Vector3(20, 8, -140), cube,  1);
-	AddCubeToWorld(Vector3(-20, 8, -160), cube, 1);
+	AddCubeToWorld(Vector3(-20, 8, -160), cube, 1);*/
+
 	//testStateObject = AddStateObjectToWorld(Vector3(0, 10, 0));
 }
 
@@ -359,7 +358,7 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 	return sphere;
 }
 
-GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass) {
+GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass, std::string name) {
 	GameObject* cube = new GameObject();
 
 	AABBVolume* volume = new AABBVolume(dimensions);
@@ -376,34 +375,36 @@ GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimens
 	cube->GetPhysicsObject()->InitCubeInertia();
 
 	cube->GetRenderObject()->SetColour(Vector4(0, 1, 1, 1));
+	cube->SetName(name);
 
 	world->AddGameObject(cube);
 
 	return cube;
 }
 
-GameObject* TutorialGame::AddPlayerToWorld(const Vector3& position) {
-	float meshSize = 1.0f;
-	float inverseMass = 0.5f;
+GameObject* TutorialGame::AddGoatToWorld(const Vector3& position) {
+	float meshSize = 5.0f;
+	float inverseMass = 5.0f;
 
-	GameObject* character = new GameObject();
-	SphereVolume* volume = new SphereVolume(1.0f);
+	goat = new GameObject();
+	AABBVolume* volume = new AABBVolume(Vector3(meshSize, meshSize, meshSize));
+	//SphereVolume* volume = new SphereVolume(meshSize);
 
-	character->SetBoundingVolume((CollisionVolume*)volume);
+	goat->SetBoundingVolume((CollisionVolume*)volume);
 
-	character->GetTransform()
-		.SetScale(Vector3(meshSize, meshSize, meshSize))
-		.SetPosition(position);
+	goat->GetTransform().SetScale(Vector3(meshSize, meshSize, meshSize)).SetPosition(position);
 
-	character->SetRenderObject(new RenderObject(&character->GetTransform(), charMesh, nullptr, basicShader));
-	character->SetPhysicsObject(new PhysicsObject(&character->GetTransform(), character->GetBoundingVolume()));
+	goat->SetRenderObject(new RenderObject(&goat->GetTransform(), charMesh, nullptr, basicShader));
+	goat->SetPhysicsObject(new PhysicsObject(&goat->GetTransform(), goat->GetBoundingVolume()));
+	goat->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
 
-	character->GetPhysicsObject()->SetInverseMass(inverseMass);
-	character->GetPhysicsObject()->InitSphereInertia();
+	goat->GetPhysicsObject()->SetInverseMass(inverseMass);
+	goat->GetPhysicsObject()->InitSphereInertia();
+	goat ->SetName("goat");
 
-	world->AddGameObject(character);
+	world->AddGameObject(goat);
 
-	return character;
+	return goat;
 }
 
 GameObject* TutorialGame::AddEnemyToWorld(const Vector3& position) {
@@ -472,6 +473,25 @@ void TutorialGame::InitDefaultFloor() {
 	AddFloorToWorld(Vector3(0, -2, 0));
 }
 
+void TutorialGame::InitCharacter(const Vector3& position, float radius, float inverseMass) {
+	characterRole = new GameObject();
+	Vector3 sphereSize = Vector3(radius, radius, radius);
+	SphereVolume* volume = new SphereVolume(radius);
+	characterRole->SetBoundingVolume((CollisionVolume*)volume);
+
+	characterRole->GetTransform().SetScale(sphereSize).SetPosition(position);
+
+	characterRole->SetRenderObject(new RenderObject(&characterRole->GetTransform(), sphereMesh, basicTex, basicShader));
+	characterRole->SetPhysicsObject(new PhysicsObject(&characterRole->GetTransform(), characterRole->GetBoundingVolume()));
+
+	characterRole->GetPhysicsObject()->SetInverseMass(inverseMass);
+	characterRole->GetPhysicsObject()->InitSphereInertia();
+
+	characterRole->SetName("role");
+
+	world->AddGameObject(characterRole);
+}
+
 void TutorialGame::InitWall() {
 	Vector3 cubeDims = Vector3(20, 20, 20);
 	Vector3 position;
@@ -533,7 +553,7 @@ void TutorialGame::InitWall() {
 }
 
 void TutorialGame::InitGameExamples() {
-	AddPlayerToWorld(Vector3(0, 5, 0));
+	AddGoatToWorld(Vector3(0, 5, 0));
 	AddEnemyToWorld(Vector3(5, 5, 0));
 	AddBonusToWorld(Vector3(10, 5, 0));
 }
@@ -705,4 +725,30 @@ void TutorialGame::AddDoorToWorld(Vector3 startpos, Vector3 doorpos, Vector3 siz
 	GameObject* block = AddCubeToWorld(startPos + doorpos, doorSize, invCubeMass);
 	PositionConstraint* constraint = new PositionConstraint(start, block, maxDistance);
 	world->AddConstraint(constraint);
+}
+
+void TutorialGame::CatchGoat() {
+	float maxDistance = 20; // constraint distance
+	hook = new PositionConstraint(characterRole, goat, maxDistance);
+	world->AddConstraint(hook);
+}
+
+void TutorialGame::AddHurdleToWorld(const Vector3& position) {
+	hurdle = new GameObject();
+	Vector3 cubeSize = Vector3(10, 10, 10);
+	AABBVolume* volume = new AABBVolume(cubeSize);
+	hurdle->SetBoundingVolume((CollisionVolume*)volume);
+
+	hurdle->GetTransform().SetPosition(position).SetScale(cubeSize * 2);
+
+	hurdle->SetRenderObject(new RenderObject(&hurdle->GetTransform(), cubeMesh, basicTex, basicShader));
+	hurdle->SetPhysicsObject(new PhysicsObject(&hurdle->GetTransform(), hurdle->GetBoundingVolume()));
+
+	hurdle->GetPhysicsObject()->SetInverseMass(0);
+	hurdle->GetPhysicsObject()->InitCubeInertia();
+
+	hurdle->GetRenderObject()->SetColour(Vector4(0, 1, 1, 1));
+	hurdle->SetName("cube");
+
+	world->AddGameObject(hurdle);
 }

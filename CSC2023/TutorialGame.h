@@ -8,6 +8,7 @@
 #include "PhysicsSystem.h"
 
 #include "StateGameObject.h"
+#include "PositionConstraint.h"
 
 namespace NCL {
 	namespace CSC8503 {
@@ -46,16 +47,19 @@ namespace NCL {
 			void LockedObjectMovement();
 
 			void BridgeConstraintTest();
+			void InitCharacter(const Vector3& position, float radius, float inverseMass = 10.0f);
 
 			GameObject* AddFloorToWorld(const Vector3& position);
 			GameObject* AddSphereToWorld(const Vector3& position, float radius, float inverseMass = 10.0f);
-			GameObject* AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
+			GameObject* AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f, std::string name = "");
 
-			GameObject* AddPlayerToWorld(const Vector3& position);
+			GameObject* AddGoatToWorld(const Vector3& position);
 			GameObject* AddEnemyToWorld(const Vector3& position);
 			GameObject* AddBonusToWorld(const Vector3& position);
 			GameObject* AddWallToWorld(const Vector3& position, Vector3 dimensions);
 			void AddDoorToWorld(Vector3 startpos, Vector3 doorpos, Vector3 size);
+			void CatchGoat();
+			void AddHurdleToWorld(const Vector3& position);
 
 #ifdef USEVULKAN
 			GameTechVulkanRenderer* renderer;
@@ -97,6 +101,11 @@ namespace NCL {
 
 			StateGameObject* AddStateObjectToWorld(const Vector3& position);
 			StateGameObject* testStateObject;
+
+			GameObject* characterRole;
+			GameObject* goat;
+			GameObject* hurdle;
+			PositionConstraint * hook;
 		};
 	}
 }
