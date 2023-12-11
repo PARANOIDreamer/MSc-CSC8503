@@ -1,5 +1,6 @@
 #pragma once
 #include "GameWorld.h"
+#include "Feature.h"
 
 namespace NCL {
 	namespace CSC8503 {
@@ -21,6 +22,9 @@ namespace NCL {
 			}
 
 			void SetGravity(const Vector3& g);
+			
+			Feature* gameRun;
+
 		protected:
 			void BasicCollisionDetection();
 			void BroadPhase();

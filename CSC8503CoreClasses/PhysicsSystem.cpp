@@ -18,6 +18,7 @@ PhysicsSystem::PhysicsSystem(GameWorld& g) : gameWorld(g)	{
 	dTOffset		= 0.0f;
 	globalDamping	= 0.995f;
 	SetGravity(Vector3(0.0f, -9.8f, 0.0f));
+	gameRun = new Feature();
 }
 
 PhysicsSystem::~PhysicsSystem()	{
@@ -216,6 +217,25 @@ void PhysicsSystem::BasicCollisionDetection() {
 				ImpulseResolveCollision(*info.a, *info.b, info.point);
 				info.framesLeft = numCollisionFrames;
 				allCollisions.insert(info);
+
+				if (info.a->GetName()=="role" || info.a->GetName() == "goat") {
+					if (info.b->GetName() == "role" || info.b->GetName() == "goat") {
+						gameRun->SetCatchgoat(1);
+					}
+				}
+				if (info.a->GetName() == "button" || info.a->GetName() == "goat") {
+					if (info.b->GetName() == "button" || info.b->GetName() == "goat") {
+						if (gameRun->GetCubemove() != 2) {
+							gameRun->SetCatchgoat(0);
+							gameRun->SetCubemove(1);
+						}
+					}
+				}
+				if (info.a->GetName() == "wall" || info.a->GetName() == "cube") {
+					if (info.b->GetName() == "wall" || info.b->GetName() == "cube") {
+						gameRun->SetCubemove(2);
+					}
+				}
 			}
 		}
 	}
