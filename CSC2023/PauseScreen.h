@@ -15,4 +15,8 @@ class PauseScreen : public PushdownState {
 	void OnAwake() override {
 		std::cout << " Press U to unpause game !\ n ";
 	}
+
+	int GetID() override {
+		return 2;
+	}
 };

@@ -9,9 +9,6 @@
 #include "GameServer.h"
 #include "GameClient.h"
 
-#include "NavigationGrid.h"
-#include "NavigationMesh.h"
-
 #include "TutorialGame.h"
 #include "NetworkedGame.h"
 
@@ -19,10 +16,6 @@
 
 #include "PushdownState.h"
 
-#include "BehaviourNode.h"
-#include "BehaviourSelector.h"
-#include "BehaviourSequence.h"
-#include "BehaviourAction.h"
 #include "IntroScreen.h"
 
 using namespace NCL;
@@ -38,13 +31,17 @@ void TestPathfinding() {
 
 	NavigationPath outPath;
 
-	Vector3 startPos(80, 0, 10);
-	Vector3 endPos(80, 0, 80);
+	Vector3 startPos(180, 0, 300);
+	//Vector3 endPos(190, 0, 120);
+	Vector3 endPos(70, 0, 350);
 
 	bool found = grid.FindPath(startPos, endPos, outPath);
 
 	Vector3 pos;
 	while (outPath.PopWaypoint(pos)) {
+		//pos.x -= 80;
+		pos += Vector3(-80, 5, -200);
+		//pos.z -= 200;
 		testNodes.push_back(pos);
 	}
 }
@@ -229,16 +226,17 @@ int main() {
 	TutorialGame* g = new TutorialGame();
 	w->GetTimer().GetTimeDeltaSeconds(); //Clear the timer so we don't get a larget first dt!
 
-	/*TestPathfinding();
-	TestBehaviourTree();
-	TestStateMachine();*/
+	TestPathfinding();
+	//TestBehaviourTree();
+	//TestStateMachine();
 
-//TestPushdownAutomata(w);
+	PushdownMachine machine(new IntroScreen());
 
 	while (w->UpdateWindow() && !Window::GetKeyboard()->KeyDown(KeyCodes::ESCAPE)) {
-		//DisplayPathfinding();
+		DisplayPathfinding();
 
 		float dt = w->GetTimer().GetTimeDeltaSeconds();
+		machine.Update(dt);
 		if (dt > 0.1f) {
 			std::cout << "Skipping large time delta" << std::endl;
 			continue; //must have hit a breakpoint or something to have a 1 second frame time!
@@ -253,9 +251,15 @@ int main() {
 		if (Window::GetKeyboard()->KeyPressed(KeyCodes::T)) {
 			w->SetWindowPosition(0, 0);
 		}
+		//w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
 
-		w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
-
+		int StateID = machine.GetState()->GetID();
+		if (StateID == 0)
+			g->stateGame = 2;
+		else if (StateID == 1)
+			g->stateGame = 0;
+		else
+			g->stateGame = 1;
 		g->UpdateGame(dt);
 	}
 	Window::DestroyGameWindow();

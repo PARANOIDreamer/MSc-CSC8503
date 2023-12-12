@@ -9,6 +9,12 @@
 
 #include "StateGameObject.h"
 #include "PositionConstraint.h"
+#include "BehaviourNode.h"
+#include "BehaviourSelector.h"
+#include "BehaviourSequence.h"
+#include "BehaviourAction.h"
+#include "NavigationGrid.h"
+#include "NavigationMesh.h"
 
 namespace NCL {
 	namespace CSC8503 {
@@ -18,6 +24,8 @@ namespace NCL {
 			~TutorialGame();
 
 			virtual void UpdateGame(float dt);
+
+			int stateGame;
 
 		protected:
 			void InitialiseAssets();
@@ -53,16 +61,20 @@ namespace NCL {
 			GameObject* AddFloorToWorld(const Vector3& position);
 			GameObject* AddSphereToWorld(const Vector3& position, float radius, float inverseMass = 10.0f);
 			GameObject* AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f, std::string name = "");
-
 			GameObject* AddGoatToWorld(const Vector3& position);
-			StateGameObject* AddEnemyToWorld(const Vector3& position);
-			void AddBonusToWorld();
 			GameObject* AddWallToWorld(const Vector3& position, Vector3 dimensions);
-			void AddDoorToWorld(Vector3 startpos, Vector3 doorpos, Vector3 size,int i);
+			StateGameObject* AddEnemyToWorld(const Vector3& position);
+			StateGameObject* AddStateObjectToWorld(const Vector3& position, bool vert);
+			
+			void AddBonusToWorld();
+			void AddDoorToWorld(Vector3 startpos, Vector3 doorpos, Vector3 size, int i);
 			void DoorConstraint(int i);
 			void CatchGoat();
 			void AddHurdleToWorld(const Vector3& position);
 			void PhysicsUpdate();
+			void BehaviourTree();
+			void Pathfinding(Vector3 start, Vector3 end);//std::string test);
+			int DisplayPathfinding(int time);
 
 #ifdef USEVULKAN
 			GameTechVulkanRenderer* renderer;
@@ -102,16 +114,19 @@ namespace NCL {
 
 			GameObject* objClosest = nullptr;
 
-			StateGameObject* AddStateObjectToWorld(const Vector3& position, bool vert);
-			StateGameObject* simpleEnemy[2];
-
 			GameObject* characterRole;
 			GameObject* goat;
 			GameObject* hurdle;
 			GameObject* door[4][2];
 			GameObject* bonus[4];
+			StateGameObject* simpleEnemy[2];
+			StateGameObject* EnemyAI;
 			PositionConstraint* hook;
-			PositionConstraint * doorLink[4];
+			PositionConstraint* doorLink[4];
+			BehaviourSequence* rootSequence;
+			BehaviourState state;
+			vector < Vector3 > testNodes;
+			int timeGame=0;
 		};
 	}
 }

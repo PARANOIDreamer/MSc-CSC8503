@@ -17,4 +17,8 @@ class IntroScreen : public PushdownState {
         std::cout << "Welcome to a really awesome game!\n";
         std::cout << "Press Space To Begin or escape to quit!\n";
     }
+
+    int GetID() override{
+        return 0;
+    }
 };

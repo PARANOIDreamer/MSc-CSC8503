@@ -1,4 +1,4 @@
-#include "TutorialGame.h"
+﻿#include "TutorialGame.h"
 #include "GameWorld.h"
 #include "PhysicsObject.h"
 #include "RenderObject.h"
@@ -38,6 +38,7 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 	controller.MapAxis(4, "YLook");
 
 	InitialiseAssets();
+	stateGame = 0;
 }
 
 /*
@@ -78,90 +79,113 @@ TutorialGame::~TutorialGame() {
 }
 
 void TutorialGame::UpdateGame(float dt) {
-	if (!inSelectionMode) {
-		world->GetMainCamera().UpdateCamera(dt);
-	}
-	if (lockedObject != nullptr) {
-		Vector3 objPos = lockedObject->GetTransform().GetPosition();
-		Vector3 camPos = objPos + lockedOffset;
+	if (stateGame == 0) {
+		if (!inSelectionMode) {
+			world->GetMainCamera().UpdateCamera(dt);
+		}
+		if (lockedObject != nullptr) {
+			Vector3 objPos = lockedObject->GetTransform().GetPosition();
+			Vector3 camPos = objPos + lockedOffset;
 
-		Matrix4 temp = Matrix4::BuildViewMatrix(camPos, objPos, Vector3(0, 1, 0));
+			Matrix4 temp = Matrix4::BuildViewMatrix(camPos, objPos, Vector3(0, 1, 0));
 
-		Matrix4 modelMat = temp.Inverse();
+			Matrix4 modelMat = temp.Inverse();
 
-		Quaternion q(modelMat);
-		Vector3 angles = q.ToEuler(); //nearly there now!
+			Quaternion q(modelMat);
+			Vector3 angles = q.ToEuler(); //nearly there now!
 
-		world->GetMainCamera().SetPosition(camPos);
-		//world->GetMainCamera().SetPitch(angles.x);
-		//world->GetMainCamera().SetYaw(angles.y);
-	}
+			world->GetMainCamera().SetPosition(camPos);
+			//world->GetMainCamera().SetPitch(angles.x);
+			//world->GetMainCamera().SetYaw(angles.y);
+		}
 
-	UpdateKeys();
-	physics->UseGravity(useGravity);
+		UpdateKeys();
+		physics->UseGravity(useGravity);
 
-	if (useGravity) {
-		Debug::Print("(G)ravity on", Vector2(5, 95), Debug::RED);
-	}
-	else {
-		Debug::Print("(G)ravity off", Vector2(5, 95), Debug::RED);
-	}
+		if (useGravity) {
+			Debug::Print("(G)ravity on", Vector2(5, 95), Debug::RED);
+		}
+		else {
+			Debug::Print("(G)ravity off", Vector2(5, 95), Debug::RED);
+		}
 
-	RayCollision closestCollision;
-	if (Window::GetKeyboard()->KeyPressed(KeyCodes::K) && selectionObject) {
-		Vector3 rayPos;
-		Vector3 rayDir;
+		RayCollision closestCollision;
+		if (Window::GetKeyboard()->KeyPressed(KeyCodes::K) && selectionObject) {
+			Vector3 rayPos;
+			Vector3 rayDir;
 
-		rayDir = selectionObject->GetTransform().GetOrientation() * Vector3(0, 0, -1);
+			rayDir = selectionObject->GetTransform().GetOrientation() * Vector3(0, 0, -1);
 
-		rayPos = selectionObject->GetTransform().GetPosition();
+			rayPos = selectionObject->GetTransform().GetPosition();
 
-		Ray r = Ray(rayPos, rayDir);
+			Ray r = Ray(rayPos, rayDir);
 
-		if (world->Raycast(r, closestCollision, true, selectionObject)) {
-			if (objClosest) {
-				objClosest->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
+			if (world->Raycast(r, closestCollision, true, selectionObject)) {
+				if (objClosest) {
+					objClosest->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
+				}
+				objClosest = (GameObject*)closestCollision.node;
+
+				objClosest->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
 			}
-			objClosest = (GameObject*)closestCollision.node;
+		}
 
-			objClosest->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
+		if (simpleEnemy[0])
+			simpleEnemy[0]->Update(dt);
+		if (simpleEnemy[1])
+			simpleEnemy[1]->Update(dt);
+
+		//Debug::DrawLine(Vector3(), Vector3(0, 100, 0), Vector4(1, 0, 0, 1));
+
+		PhysicsUpdate();
+
+		int time = 120 - physics->gameRun->GetTime();
+		Debug::Print("Time:" + std::to_string(time), Vector2(5, 5), Debug::RED);
+		if (physics->gameRun->GetOntime() == 1) {
+			physics->gameRun->SetTime(dt);
+		}
+		if (state == Ongoing) {
+			state = rootSequence->Execute(1.0f); // fake dt
+		}
+		SelectObject();
+		MoveSelectedObject();
+
+		world->UpdateWorld(dt);
+		renderer->Update(dt);
+		physics->Update(dt);
+
+		//renderer->Render();
+		//Debug::UpdateRenderables(dt);
+	}
+	else if (stateGame == 1)
+		Debug::Print("Press Space To unpause game !", Vector2(20, 50), Debug::RED);
+	else {
+		Debug::Print("Welcome to a really awesome game!", Vector2(20, 35), Debug::RED);
+		Debug::Print("Press Space To Begin.", Vector2(30, 45), Debug::RED);
+		Debug::Print("Press Escape to quit.", Vector2(30, 55), Debug::RED);
+		Debug::Print("Press Y To view score record.", Vector2(25, 63), Debug::RED);
+		if (physics->gameRun->GetTime() != 0) {
+			forceMagnitude = 10.0f;
+			inSelectionMode = false;
+			InitCamera();
+			InitWorld();
+			selectionObject = nullptr;
+			physics->gameRun = new Feature;
 		}
 	}
-
-	if (simpleEnemy[0])
-		simpleEnemy[0]->Update(dt);
-	if (simpleEnemy[1])
-		simpleEnemy[1]->Update(dt);
-
-	//Debug::DrawLine(Vector3(), Vector3(0, 100, 0), Vector4(1, 0, 0, 1));
-	
-	PhysicsUpdate();
-
-	int time = 120 - physics->gameRun->GetTime();
-	Debug::Print("Time:" + std::to_string(time), Vector2(5, 5), Debug::RED);
-	if (physics->gameRun->GetOntime() == 1) {
-		physics->gameRun->SetTime(dt);
-	}
-
-	SelectObject();
-	MoveSelectedObject();
-
-	world->UpdateWorld(dt);
-	renderer->Update(dt);
-	physics->Update(dt);
-
 	renderer->Render();
 	Debug::UpdateRenderables(dt);
 }
 
 void TutorialGame::UpdateKeys() {
+	if (Window::GetKeyboard()->KeyPressed(KeyCodes::F2)) {
+		InitCamera(); //F2 will reset the camera to a specific default place
+	}
+	DebugObjectMovement();
+	/*
 	if (Window::GetKeyboard()->KeyPressed(KeyCodes::F1)) {
 		InitWorld(); //We can reset the simulation at any time with F1
 		selectionObject = nullptr;
-	}
-
-	if (Window::GetKeyboard()->KeyPressed(KeyCodes::F2)) {
-		InitCamera(); //F2 will reset the camera to a specific default place
 	}
 
 	if (Window::GetKeyboard()->KeyPressed(KeyCodes::G)) {
@@ -186,12 +210,12 @@ void TutorialGame::UpdateKeys() {
 		world->ShuffleObjects(false);
 	}
 
-	/*if (lockedObject) {
+	if (lockedObject) {
 		LockedObjectMovement();
 	}
-	else {*/
+	else {
 	DebugObjectMovement();
-	//}
+	}*/
 }
 
 void TutorialGame::LockedObjectMovement() {
@@ -263,23 +287,25 @@ void TutorialGame::InitWorld() {
 	AddCubeToWorld(Vector3(-140, -0.8, 150), Vector3(20, 1, 10), 0, "start");
 	AddCubeToWorld(Vector3(150, -0.9, 140), Vector3(10, 1, 20), 0, "button");
 	AddCubeToWorld(Vector3(-40, 10, 150), Vector3(0.1, 10, 10), 0, "wall");
-	AddHurdleToWorld(Vector3(130, 10, 150));
+	//AddHurdleToWorld(Vector3(130, 10, 150));
 	//AddSphereToWorld(Vector3(-120, 6, -80), 6.0f);
 	//InitMixedGridWorld(15, 15, 3.5f, 3.5f);
 	//InitGameExamples();
 	//BridgeConstraintTest();
 
 	InitDoor();
-	AddBonusToWorld();
+	//AddBonusToWorld();
 	Vector3 cube = Vector3(8, 8, 8);
 	AddCubeToWorld(Vector3(-60, 8, -140), cube, 1);
-	AddCubeToWorld(Vector3(-40, 8, -100), cube,  1);
+	AddCubeToWorld(Vector3(-40, 8, -100), cube, 1);
 	AddCubeToWorld(Vector3(-20, 8, -120), cube, 1);
-	AddCubeToWorld(Vector3(20, 8, -140), cube,  1);
+	AddCubeToWorld(Vector3(20, 8, -140), cube, 1);
 	AddCubeToWorld(Vector3(-20, 8, -160), cube, 1);
 
 	simpleEnemy[0] = AddStateObjectToWorld(Vector3(50, 5, -40), false);
 	simpleEnemy[1] = AddStateObjectToWorld(Vector3(-80, 5, 150), true);
+	AddEnemyToWorld(Vector3(100, 5, 100));
+	BehaviourTree();
 }
 
 /*
@@ -408,29 +434,29 @@ StateGameObject* TutorialGame::AddEnemyToWorld(const Vector3& position) {
 	float meshSize = 10.0f;
 	float inverseMass = 0.5f;
 
-	StateGameObject* character = new StateGameObject();
+	EnemyAI = new StateGameObject();
 
 	AABBVolume* volume = new AABBVolume(Vector3(0.3f, 0.9f, 0.3f) * meshSize);
-	character->SetBoundingVolume((CollisionVolume*)volume);
+	EnemyAI->SetBoundingVolume((CollisionVolume*)volume);
 
-	character->GetTransform().SetScale(Vector3(meshSize, meshSize, meshSize)).SetPosition(position);
+	EnemyAI->GetTransform().SetScale(Vector3(meshSize, meshSize, meshSize)).SetPosition(position);
 
-	character->SetRenderObject(new RenderObject(&character->GetTransform(), enemyMesh, nullptr, basicShader));
-	character->SetPhysicsObject(new PhysicsObject(&character->GetTransform(), character->GetBoundingVolume()));
+	EnemyAI->SetRenderObject(new RenderObject(&EnemyAI->GetTransform(), enemyMesh, nullptr, basicShader));
+	EnemyAI->SetPhysicsObject(new PhysicsObject(&EnemyAI->GetTransform(), EnemyAI->GetBoundingVolume()));
 
-	character->GetPhysicsObject()->SetInverseMass(inverseMass);
-	character->GetPhysicsObject()->InitSphereInertia();
+	EnemyAI->GetPhysicsObject()->SetInverseMass(inverseMass);
+	EnemyAI->GetPhysicsObject()->InitSphereInertia();
 
-	character->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
-	character->SetName("enemy");
+	EnemyAI->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
+	EnemyAI->SetName("enemy");
 
-	world->AddGameObject(character);
+	world->AddGameObject(EnemyAI);
 
-	return character;
+	return EnemyAI;
 }
 
 void TutorialGame::AddBonusToWorld() {
-	Vector3 position[4] = { Vector3(-30,5,110),Vector3(-150,5,10),Vector3(150,5,0),Vector3(110,5,-50) };
+	Vector3 position[4] = { Vector3(-30,5,110),Vector3(-150,5,10),Vector3(150,5,0),Vector3(110,5,-150) };
 	for (int i = 0; i < 4; i++) {
 		bonus[i] = new GameObject();
 		std::string name = "bonus" + std::to_string(i);
@@ -713,20 +739,20 @@ void TutorialGame::BridgeConstraintTest() {
 }
 
 void TutorialGame::InitDoor() {
-	AddDoorToWorld(Vector3(10, 10, 110), Vector3(0, 0, -20), Vector3(3, 10, 10),0);
-	AddDoorToWorld(Vector3(-150, 10, -50), Vector3(20, 0, 0), Vector3(10, 10, 3),1);
-	AddDoorToWorld(Vector3(-90, 10, -50), Vector3(-20, 0, 0), Vector3(10, 10, 3),2);
-	AddDoorToWorld(Vector3(90, 10, -110), Vector3(0, 0, 20), Vector3(3, 10, 10),3);
+	AddDoorToWorld(Vector3(10, 10, 110), Vector3(0, 0, -20), Vector3(3, 10, 10), 0);
+	AddDoorToWorld(Vector3(-150, 10, -50), Vector3(20, 0, 0), Vector3(10, 10, 3), 1);
+	AddDoorToWorld(Vector3(-90, 10, -50), Vector3(-20, 0, 0), Vector3(10, 10, 3), 2);
+	AddDoorToWorld(Vector3(90, 10, -110), Vector3(0, 0, 20), Vector3(3, 10, 10), 3);
 }
 
-void TutorialGame::AddDoorToWorld(Vector3 startpos, Vector3 doorpos, Vector3 size,int i) {
+void TutorialGame::AddDoorToWorld(Vector3 startpos, Vector3 doorpos, Vector3 size, int i) {
 	Vector3 cubeSize = Vector3(10, 10, 10);
 	Vector3 doorSize = size;
 	float cubeDistance = 20; // distance between links
 	Vector3 startPos = startpos;
 	std::string name = "door" + std::to_string(i);
 	door[i][0] = AddWallToWorld(startPos, cubeSize);
-	door[i][1] = AddCubeToWorld(startPos + doorpos, doorSize, 0,name);
+	door[i][1] = AddCubeToWorld(startPos + doorpos, doorSize, 0, name);
 }
 
 void TutorialGame::CatchGoat() {
@@ -793,7 +819,7 @@ void TutorialGame::PhysicsUpdate() {
 	for (int i = 0; i < 4; i++) {
 		if (physics->gameRun->bonus[i] == 1) {
 			obj -= 1;
-			if (bonus[i]!=nullptr) {
+			if (bonus[i] != nullptr) {
 				world->RemoveGameObject(bonus[i]);
 				bonus[i] = nullptr;
 				physics->gameRun->AddScore((i + 1) * 10);
@@ -802,4 +828,114 @@ void TutorialGame::PhysicsUpdate() {
 	}
 	Debug::Print("Score:" + std::to_string(physics->gameRun->GetScore()), Vector2(50, 5), Debug::RED);
 	Debug::Print("Destroyable:" + std::to_string(obj), Vector2(70, 5), Debug::RED);
+	//DisplayPathfinding();
+}
+
+void TutorialGame::BehaviourTree() {
+	float behaviourTimer;
+	float distanceToTarget;
+
+	BehaviourAction* findKey = new BehaviourAction("Find Key", [&](float dt, BehaviourState state) -> BehaviourState {
+		if (state == Initialise) {
+			std::cout << "Wait\n";
+			behaviourTimer = rand() % 100;
+			state = Ongoing;
+		}
+		else if (state == Ongoing) {
+			//behaviourTimer -= dt;
+			if (stateGame==0) {
+				std::cout << "Go!\n";
+				EnemyAI->GetRenderObject()->SetColour(Vector4(1, 0, 0, 1));
+				return Success;
+			}
+		}
+		return state; // will be �ongoing?until success
+		});
+	BehaviourAction* goToRoom = new BehaviourAction("Go To Room", [&](float dt, BehaviourState state) -> BehaviourState {
+		if (state == Initialise) {
+			std::cout << "Going to the button!\n";
+			state = Ongoing;
+			timeGame = physics->gameRun->GetTime();
+		}
+		else if (state == Ongoing) {
+			//distanceToTarget -= dt;
+			if (physics->gameRun->GetTime()>0) {
+				std::cout << "Reached button!\n";
+				Pathfinding(Vector3(180, 0, 300), Vector3(70, 0, 350));
+				//int time = physics->gameRun->GetTime();
+				//DisplayPathfinding(timeGame);
+				int k = DisplayPathfinding(timeGame);
+				//std::cout << k<< std::endl;
+				EnemyAI->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
+				if(k==1)
+					return Success;
+			}
+		}
+		return state; // will be �ongoing?until success
+		});
+	BehaviourAction* openDoor = new BehaviourAction("Open Door", [&](float dt, BehaviourState state) -> BehaviourState {
+		if (state == Initialise) {
+			std::cout << "Catch!\n";
+			return Success;
+		}
+		return state;
+		});
+
+	BehaviourSequence* sequence = new BehaviourSequence("Room Sequence");
+	sequence->AddChild(findKey);
+	sequence->AddChild(goToRoom);
+	sequence->AddChild(openDoor);
+
+	rootSequence = new BehaviourSequence("Root Sequence");
+	rootSequence->AddChild(sequence);
+
+	rootSequence->Reset();
+	behaviourTimer = 0.0f;
+	distanceToTarget = rand() % 250;
+	state = Ongoing;
+	std::cout << "We're going on an adventure!\n";
+	/*while (state == Ongoing) {
+		state = rootSequence->Execute(1.0f); // fake dt
+	}
+	if (state == Success) {
+		std::cout << "What a successful adventure!\n";
+	}*/
+}
+
+void TutorialGame::Pathfinding(Vector3 start, Vector3 end) {
+	NavigationGrid grid("TestGrid1.txt");
+
+	NavigationPath outPath;
+
+	Vector3 startPos = start; (180, 0, 300);
+	//Vector3 endPos(190, 0, 120);
+	Vector3 endPos = end; (70, 0, 350);
+
+	bool found = grid.FindPath(startPos, endPos, outPath);
+
+	Vector3 pos;
+	while (outPath.PopWaypoint(pos)) {
+		//pos.x -= 80;
+		pos += Vector3(-80, 5, -200);
+		//pos.z -= 200;
+		testNodes.push_back(pos);
+	}
+}
+
+int TutorialGame::DisplayPathfinding(int time) {
+	//for (int i = 1; i < testNodes.size(); ++i) {
+	int i = physics->gameRun->GetTime()-time;
+	if(i < testNodes.size() && i>=1){
+		Vector3 a = testNodes[i - 1];
+		Vector3 b = testNodes[i];
+		EnemyAI->GetPhysicsObject()->AddForce((b-a)*1);
+		//float maxDistance = 7; // constraint distance
+		//GameObject* p = AddSphereToWorld(b, 0.1, 0);
+		//PositionConstraint* push = new PositionConstraint(p, EnemyAI, maxDistance);
+		//world->AddConstraint(push);
+		//Debug::DrawLine(a, b, Vector4(0, 1, 0, 1));
+	if (a==b)
+		return 1;
+	}
+return i+2;
 }
