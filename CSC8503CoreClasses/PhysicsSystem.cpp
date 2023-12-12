@@ -225,6 +225,9 @@ void PhysicsSystem::BasicCollisionDetection() {
 						else
 							gameRun->SetOntime(1);
 					}
+					if (info.a->GetName() == "enemy" || info.b->GetName() == "enemy") {
+						gameRun->SetOnmove(1);
+					}
 					for (int i = 0; i < 4; i++) {
 						std::string name = "door" + std::to_string(i);
 						if (info.a->GetName() == name || info.b->GetName() == name) {
