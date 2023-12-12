@@ -56,11 +56,11 @@ void StateGameObject::MoveRight(float dt) {
 }
 
 void StateGameObject::MoveUp(float dt) {
-	GetPhysicsObject()->AddForce({ 0,0,100 });
+	GetPhysicsObject()->AddForce({ 0,0,-50 });
 	counter += dt;
 }
 
 void StateGameObject::MoveDown(float dt) {
-	GetPhysicsObject()->AddForce({ 0,0,-100 });
+	GetPhysicsObject()->AddForce({ 0,0,50 });
 	counter -= dt;
 }

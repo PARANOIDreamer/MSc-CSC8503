@@ -103,7 +103,7 @@ namespace NCL {
 			GameObject* objClosest = nullptr;
 
 			StateGameObject* AddStateObjectToWorld(const Vector3& position, bool vert);
-			StateGameObject* testStateObject;
+			StateGameObject* simpleEnemy[2];
 
 			GameObject* characterRole;
 			GameObject* goat;

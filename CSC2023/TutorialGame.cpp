@@ -128,9 +128,10 @@ void TutorialGame::UpdateGame(float dt) {
 		}
 	}
 
-	if (testStateObject) {
-		testStateObject->Update(dt);
-	}
+	if (simpleEnemy[0])
+		simpleEnemy[0]->Update(dt);
+	if (simpleEnemy[1])
+		simpleEnemy[1]->Update(dt);
 
 	//Debug::DrawLine(Vector3(), Vector3(0, 100, 0), Vector4(1, 0, 0, 1));
 	
@@ -277,7 +278,8 @@ void TutorialGame::InitWorld() {
 	AddCubeToWorld(Vector3(20, 8, -140), cube,  1);
 	AddCubeToWorld(Vector3(-20, 8, -160), cube, 1);
 
-	testStateObject = AddStateObjectToWorld(Vector3(50, 5, -40),false);
+	simpleEnemy[0] = AddStateObjectToWorld(Vector3(50, 5, -40), false);
+	simpleEnemy[1] = AddStateObjectToWorld(Vector3(-80, 5, 150), true);
 }
 
 /*
@@ -772,6 +774,10 @@ void TutorialGame::PhysicsUpdate() {
 			hurdle->GetPhysicsObject()->SetInverseMass(1);
 			physics->gameRun->SetHookgoat(0);
 		}
+	}
+	if (physics->gameRun->GetOnmove() == 1) {
+		InitWorld();
+		physics->gameRun->Again();
 	}
 	for (int i = 0; i < 4; i++) {
 		if (physics->gameRun->GetLockdoor(i) == 1) {
