@@ -11,6 +11,9 @@ namespace NCL {
 			~PushdownMachine();
 
 			bool Update(float dt);
+			PushdownState* GetState() {
+				return activeState;
+			}
 
 		protected:
 			PushdownState* activeState;
