@@ -63,6 +63,8 @@ namespace NCL {
 			GameObject* AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f, std::string name = "");
 			GameObject* AddGoatToWorld(const Vector3& position);
 			GameObject* AddWallToWorld(const Vector3& position, Vector3 dimensions);
+			GameObject* AddCapsuleToWorld(const Vector3& position, float h, float r);
+			GameObject* AddOBBToWorld(const Vector3& position, Vector3 dimensions);
 			StateGameObject* AddEnemyToWorld(const Vector3& position);
 			StateGameObject* AddStateObjectToWorld(const Vector3& position, bool vert);
 			
@@ -72,9 +74,10 @@ namespace NCL {
 			void CatchGoat();
 			void AddHurdleToWorld(const Vector3& position);
 			void PhysicsUpdate();
+			void moveUpdate(float dt);
 			void BehaviourTree();
 			void Pathfinding(Vector3 start, Vector3 end);//std::string test);
-			int DisplayPathfinding(int time);
+			void DisplayPathfinding(int time, float force);
 
 #ifdef USEVULKAN
 			GameTechVulkanRenderer* renderer;

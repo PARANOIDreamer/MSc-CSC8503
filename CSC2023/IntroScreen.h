@@ -3,7 +3,7 @@
 
 class IntroScreen : public PushdownState {
     PushdownResult OnUpdate(float dt, PushdownState** newState) override {
-        if (Window::GetKeyboard()->KeyPressed(/*KeyboardKeys*/KeyCodes::SPACE)) {
+        if (Window::GetKeyboard()->KeyPressed(/*KeyboardKeys*/KeyCodes::J)) {
             *newState = new GameScreen();
             return PushdownResult::Push;
         }

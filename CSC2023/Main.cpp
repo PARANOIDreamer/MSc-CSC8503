@@ -31,7 +31,7 @@ void TestPathfinding() {
 
 	NavigationPath outPath;
 
-	Vector3 startPos(180, 0, 300);
+	Vector3 startPos(190, 0, 250);
 	//Vector3 endPos(190, 0, 120);
 	Vector3 endPos(70, 0, 350);
 
@@ -226,14 +226,14 @@ int main() {
 	TutorialGame* g = new TutorialGame();
 	w->GetTimer().GetTimeDeltaSeconds(); //Clear the timer so we don't get a larget first dt!
 
-	TestPathfinding();
+	//TestPathfinding();
 	//TestBehaviourTree();
 	//TestStateMachine();
 
 	PushdownMachine machine(new IntroScreen());
 
 	while (w->UpdateWindow() && !Window::GetKeyboard()->KeyDown(KeyCodes::ESCAPE)) {
-		DisplayPathfinding();
+		//DisplayPathfinding();
 
 		float dt = w->GetTimer().GetTimeDeltaSeconds();
 		machine.Update(dt);
