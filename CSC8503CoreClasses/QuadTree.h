@@ -16,21 +16,21 @@ namespace NCL {
 			T object;
 
 			QuadTreeEntry(T obj, Vector3 pos, Vector3 size) {
-				object		= obj;
-				this->pos	= pos;
-				this->size	= size;
+				object = obj;
+				this->pos = pos;
+				this->size = size;
 			}
 		};
 
 		template<class T>
-		class QuadTreeNode	{
+		class QuadTreeNode {
 		public:
 			typedef std::function<void(std::list<QuadTreeEntry<T>>&)> QuadTreeFunc;
 
 			void Insert(T& object, const Vector3& objectPos, const Vector3& objectSize, int depthLeft, int maxSize) {
-				/*if (!CollisionDetection::AABBTest(objectPos, Vector3(position.x, 0, position.y), objectSize, Vector3(size.x, 1000.0f, size.y))) {
+				if (!CollisionDetection::AABBTest(objectPos, Vector3(position.x, 0, position.y), objectSize, Vector3(size.x, 1000.0f, size.y))) {
 					return;
-				}*/
+				}
 				if (children) { // not a leaf node , just descend the tree
 					for (int i = 0; i < 4; ++i) {
 						children[i].Insert(object, objectPos, objectSize, depthLeft - 1, maxSize);
@@ -60,9 +60,9 @@ namespace NCL {
 			QuadTreeNode() {}
 
 			QuadTreeNode(Vector2 pos, Vector2 size) {
-				children		= nullptr;
-				this->position	= pos;
-				this->size		= size;
+				children = nullptr;
+				this->position = pos;
+				this->size = size;
 			}
 
 			~QuadTreeNode() {
@@ -113,10 +113,10 @@ namespace NCL {
 		class QuadTree
 		{
 		public:
-			QuadTree(Vector2 size, int maxDepth = 6, int maxSize = 5){
+			QuadTree(Vector2 size, int maxDepth = 6, int maxSize = 5) {
 				root = QuadTreeNode<T>(Vector2(), size);
-				this->maxDepth	= maxDepth;
-				this->maxSize	= maxSize;
+				this->maxDepth = maxDepth;
+				this->maxSize = maxSize;
 			}
 			~QuadTree() {
 			}

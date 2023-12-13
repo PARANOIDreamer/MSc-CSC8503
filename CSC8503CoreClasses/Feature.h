@@ -16,6 +16,7 @@ public:
 		score = 0;
 		for (int i = 0; i < 4; i++)
 			bonus[i] = 0;
+		lock = 0;
 	}
 	~Feature();
 
@@ -83,8 +84,10 @@ public:
 		for (int i = 0; i < 4; i++)
 			lockDoor[i] = 0;
 		score = 0;
+		lock = 0;
 	}
-	bool bonus[4];
+	int bonus[4];
+	bool lock;
 
 protected:
 	int catchGoat;

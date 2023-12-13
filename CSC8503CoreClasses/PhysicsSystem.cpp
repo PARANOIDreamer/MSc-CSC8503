@@ -217,8 +217,7 @@ void PhysicsSystem::BasicCollisionDetection() {
 				ImpulseResolveCollision(*info.a, *info.b, info.point);
 				info.framesLeft = numCollisionFrames;
 				allCollisions.insert(info);
-
-				if (info.a->GetName() == "role" || info.b->GetName() == "role") {
+			/*	if (info.a->GetName() == "role" || info.b->GetName() == "role") {
 					if (info.a->GetName() == "start" || info.b->GetName() == "start") {
 						if (gameRun->GetHookgoat() == 1)
 							gameRun->SetOntime(2);
@@ -252,11 +251,36 @@ void PhysicsSystem::BasicCollisionDetection() {
 						}
 					}
 				}
-				if (info.a->GetName() == "wall" || info.b->GetName() == "wall") {
-					if (info.a->GetName() == "cube" || info.b->GetName() == "cube") {
+				if (info.a->GetName() == "cube" || info.b->GetName() == "cube") {
+					if (info.a->GetName() == "wall" || info.b->GetName() == "wall") {
 						gameRun->SetCubemove(2);
 					}
+					if (info.a->GetName() == "enemy" || info.b->GetName() == "enemy")
+						gameRun->lock = 1;
 				}
+				if (info.a->GetName() == "enemy" || info.b->GetName() == "enemy") {
+					if (info.a->GetName() == "close" || info.b->GetName() == "close") {
+						gameRun->lock = 1;
+						for (int i = 0; i < 4; i++)
+							gameRun->SetLockdoor(i, 3);
+					}
+					if (info.a->GetName() == "goat" || info.b->GetName() == "goat")
+						gameRun->SetOnmove(1);
+					if (info.a->GetName() == "bonus3" || info.b->GetName() == "bonus3")
+						gameRun->bonus[3] = 2;
+					if (info.a->GetName() == "teleport1" || info.b->GetName() == "teleport1") {
+						if (info.a->GetName() == "enemy")
+							info.a->GetTransform().SetPosition(Vector3(-90, 5, 10));
+						else
+							info.b->GetTransform().SetPosition(Vector3(-90, 5, 10));
+					}
+					if (info.a->GetName() == "teleport2" || info.b->GetName() == "teleport2") {
+						if (info.a->GetName() == "enemy")
+							info.a->GetTransform().SetPosition(Vector3(-80, 5, 50));
+						else
+							info.b->GetTransform().SetPosition(Vector3(-80, 5, 50));
+					}
+				}*/
 			}
 		}
 	}
@@ -312,6 +336,71 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 
 	physA->ApplyAngularImpulse(Vector3::Cross(relativeA, -fullImpulse));
 	physB->ApplyAngularImpulse(Vector3::Cross(relativeB, fullImpulse));
+
+	if (a.GetName() == "role" || b.GetName() == "role") {
+		if (a.GetName() == "start" || b.GetName() == "start") {
+			if (gameRun->GetHookgoat() == 1)
+				gameRun->SetOntime(2);
+			else
+				gameRun->SetOntime(1);
+		}
+		if (a.GetName() == "enemy" || b.GetName() == "enemy") {
+			gameRun->SetOnmove(1);
+		}
+		for (int i = 0; i < 4; i++) {
+			std::string name = "door" + std::to_string(i);
+			if (a.GetName() == name || b.GetName() == name) {
+				if (gameRun->GetLockdoor(i) == 0)
+					gameRun->SetLockdoor(i, 1);
+			}
+		}
+		for (int i = 0; i < 4; i++) {
+			std::string name = "bonus" + std::to_string(i);
+			if (a.GetName() == name || b.GetName() == name)
+				gameRun->bonus[i] = 1;
+		}
+		if (a.GetName() == "goat" || b.GetName() == "goat") {
+			gameRun->SetCatchgoat(1);
+		}
+	}
+	if (a.GetName() == "button" || b.GetName() == "button") {
+		if (a.GetName() == "goat" || b.GetName() == "goat") {
+			if (gameRun->GetCubemove() != 2) {
+				gameRun->SetCatchgoat(0);
+				gameRun->SetCubemove(1);
+			}
+		}
+	}
+	if (a.GetName() == "cube" || b.GetName() == "cube") {
+		if (a.GetName() == "wall" || b.GetName() == "wall") {
+			gameRun->SetCubemove(2);
+		}
+		if (a.GetName() == "enemy" || b.GetName() == "enemy")
+			gameRun->lock = 1;
+	}
+	if (a.GetName() == "enemy" || b.GetName() == "enemy") {
+		if (a.GetName() == "close" || b.GetName() == "close") {
+			gameRun->lock = 1;
+			for (int i = 0; i < 4; i++)
+				gameRun->SetLockdoor(i, 3);
+		}
+		if (a.GetName() == "goat" || b.GetName() == "goat")
+			gameRun->SetOnmove(1);
+		if (a.GetName() == "bonus3" || b.GetName() == "bonus3")
+			gameRun->bonus[3] = 2;
+		if (a.GetName() == "teleport1" || b.GetName() == "teleport1") {
+			if (a.GetName() == "enemy")
+				a.GetTransform().SetPosition(Vector3(-90, 5, 10));
+			else
+				b.GetTransform().SetPosition(Vector3(-90, 5, 10));
+		}
+		if (a.GetName() == "teleport2" || b.GetName() == "teleport2") {
+			if (a.GetName() == "enemy")
+				a.GetTransform().SetPosition(Vector3(-80, 5, 50));
+			else
+				b.GetTransform().SetPosition(Vector3(-80, 5, 50));
+		}
+	}
 }
 
 /*
@@ -337,7 +426,8 @@ void PhysicsSystem::BroadPhase() {
 		Vector3 pos = (*i)->GetTransform().GetPosition();
 		tree.Insert(*i, pos, halfSizes);
 	}
-	tree.OperateOnContents([&](std::list < QuadTreeEntry < GameObject* > >& data) {
+	tree.OperateOnContents(
+		[&](std::list < QuadTreeEntry < GameObject* > >& data) {
 		CollisionDetection::CollisionInfo info;
 		for (auto i = data.begin(); i != data.end(); ++i) {
 			for (auto j = std::next(i); j != data.end(); ++j) {
