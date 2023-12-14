@@ -6,7 +6,9 @@
 
 #include "OrientationConstraint.h"
 #include "StateGameObject.h"
-
+//#include <iostream>
+#include "Assets.h"
+#include <fstream>
 
 
 using namespace NCL;
@@ -93,6 +95,15 @@ void TutorialGame::UpdateGame(float dt) {
 		else if (physics->gameRun->GetOntime() == 2) {
 			Debug::Print("You Win !", Vector2(40, 40), Debug::RED);
 			Debug::Print("You Score:" + std::to_string(physics->gameRun->GetScore()) + " You Time:" + std::to_string(120 - time), Vector2(20, 50), Debug::RED);
+			if (file !=1) {
+				std::ofstream outfile(Assets::DATADIR + "score.txt", std::ios::app);
+				if (outfile.fail())
+					std::cout << "fail" << std::endl;
+				else
+					outfile << physics->gameRun->GetScore() << ' ' << 120 - time << std::endl;
+				outfile.close();
+				file = 1;
+			}
 		}
 		else if (physics->gameRun->GetOntime() == 3) {
 			Debug::Print("You Lose !", Vector2(40, 50), Debug::RED);
@@ -108,20 +119,26 @@ void TutorialGame::UpdateGame(float dt) {
 		physics->Update(dt);
 	}
 	else if (stateGame == 1)
-		Debug::Print("Press Space To unpause game !", Vector2(20, 50), Debug::RED);
+		Debug::Print("Press U To unpause game !", Vector2(20, 50), Debug::RED);
 	else {
-		Debug::Print("Welcome to a really awesome game!", Vector2(20, 35), Debug::RED);
-		Debug::Print("Press J To Begin.", Vector2(30, 45), Debug::RED);
-		Debug::Print("Press Escape to quit.", Vector2(30, 55), Debug::RED);
-		Debug::Print("Press Y To view score record.", Vector2(25, 63), Debug::RED);
-		if (physics->gameRun->GetTime() != 0) {
-			forceMagnitude = 10.0f;
-			inSelectionMode = false;
-			InitCamera();
-			InitWorld();
-			selectionObject = nullptr;
-			physics->gameRun = new Feature;
+		if (file != 2) {
+			Debug::Print("Welcome to a really awesome game!", Vector2(20, 35), Debug::RED);
+			Debug::Print("Press J To Begin.", Vector2(30, 45), Debug::RED);
+			Debug::Print("Press Escape to quit.", Vector2(30, 55), Debug::RED);
+			Debug::Print("Press Y To view score record.", Vector2(25, 63), Debug::RED);
+			if (physics->gameRun->GetTime() != 0) {
+				forceMagnitude = 10.0f;
+				inSelectionMode = false;
+				InitCamera();
+				InitWorld();
+				selectionObject = nullptr;
+				physics->gameRun = new Feature;
+			}
+			if (Window::GetKeyboard()->KeyPressed(KeyCodes::Y))
+				file = 2;
 		}
+		else 
+			CheckScorerecord();
 	}
 	renderer->Render();
 	Debug::UpdateRenderables(dt);
@@ -131,16 +148,15 @@ void TutorialGame::UpdateKeys() {
 	if (Window::GetKeyboard()->KeyPressed(KeyCodes::F2)) {
 		InitCamera(); //F2 will reset the camera to a specific default place
 	}
+	if (Window::GetKeyboard()->KeyPressed(KeyCodes::G)) {
+		useGravity = !useGravity; //Toggle gravity!
+		//physics->UseGravity(useGravity);
+	}
 	DebugObjectMovement();
 	/*
 	if (Window::GetKeyboard()->KeyPressed(KeyCodes::F1)) {
 		InitWorld(); //We can reset the simulation at any time with F1
 		selectionObject = nullptr;
-	}
-
-	if (Window::GetKeyboard()->KeyPressed(KeyCodes::G)) {
-		useGravity = !useGravity; //Toggle gravity!
-		//physics->UseGravity(useGravity);
 	}
 	//Running certain physics updates in a consistent order might cause some
 	//bias in the calculations - the same objects might keep 'winning' the constraint
@@ -166,34 +182,6 @@ void TutorialGame::UpdateKeys() {
 	else {
 	DebugObjectMovement();
 	}*/
-}
-
-void TutorialGame::LockedObjectMovement() {
-	Matrix4 view = world->GetMainCamera().BuildViewMatrix();
-	Matrix4 camWorld = view.Inverse();
-
-	Vector3 rightAxis = Vector3(camWorld.GetColumn(0)); //view is inverse of model!
-
-	//forward is more tricky -  camera forward is 'into' the screen...
-	//so we can take a guess, and use the cross of straight up, and
-	//the right axis, to hopefully get a vector that's good enough!
-
-	Vector3 fwdAxis = Vector3::Cross(Vector3(0, 1, 0), rightAxis);
-	fwdAxis.y = 0.0f;
-	fwdAxis.Normalise();
-
-
-	if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
-		selectionObject->GetPhysicsObject()->AddForce(fwdAxis);
-	}
-
-	if (Window::GetKeyboard()->KeyDown(KeyCodes::DOWN)) {
-		selectionObject->GetPhysicsObject()->AddForce(-fwdAxis);
-	}
-
-	if (Window::GetKeyboard()->KeyDown(KeyCodes::NEXT)) {
-		selectionObject->GetPhysicsObject()->AddForce(Vector3(0, -10, 0));
-	}
 }
 
 void TutorialGame::DebugObjectMovement() {
@@ -255,8 +243,9 @@ void TutorialGame::InitWorld() {
 	simpleEnemy[1] = AddStateObjectToWorld(Vector3(-80, 5, 130), true);
 	AddEnemyToWorld(Vector3(100, 5, 100));
 	BehaviourTree();
-	AddCapsuleToWorld(Vector3(-150, 10, 80), 10, 5);
-	AddOBBToWorld(Vector3(-150, 5, 60), Vector3(5, 5, 5));
+	AddCapsuleToWorld(Vector3(-150, 10, 60), 10, 3);
+	AddCapsuleToWorld(Vector3(-150, 10, -20), 10, 3, 10);
+	AddOBBToWorld(Vector3(-150, 5, 80), Vector3(5, 5, 5));
 }
 
 /*
@@ -532,49 +521,6 @@ void TutorialGame::InitWall() {
 	AddWallToWorld(Vector3(90, 10, -150), cubeDims);
 	AddWallToWorld(Vector3(130, 10, 90), cubeDims);
 	AddWallToWorld(Vector3(130, 10, 110), cubeDims);
-}
-
-void TutorialGame::InitGameExamples() {
-	AddGoatToWorld(Vector3(0, 5, 0));
-	//AddEnemyToWorld(Vector3(5, 5, 0));
-	//AddBonusToWorld(Vector3(10, 5, 0));
-}
-
-void TutorialGame::InitSphereGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, float radius) {
-	for (int x = 0; x < numCols; ++x) {
-		for (int z = 0; z < numRows; ++z) {
-			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing);
-			AddSphereToWorld(position, radius, 1.0f);
-		}
-	}
-	AddFloorToWorld(Vector3(0, -2, 0));
-}
-
-void TutorialGame::InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing) {
-	float sphereRadius = 1.0f;
-	Vector3 cubeDims = Vector3(1, 1, 1);
-
-	for (int x = 0; x < numCols; ++x) {
-		for (int z = 0; z < numRows; ++z) {
-			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing);
-
-			if (rand() % 2) {
-				AddCubeToWorld(position, cubeDims);
-			}
-			else {
-				AddSphereToWorld(position, sphereRadius);
-			}
-		}
-	}
-}
-
-void TutorialGame::InitCubeGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, const Vector3& cubeDims) {
-	for (int x = 1; x < numCols + 1; ++x) {
-		for (int z = 1; z < numRows + 1; ++z) {
-			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing);
-			AddCubeToWorld(position, cubeDims, 1.0f);
-		}
-	}
 }
 
 /*
@@ -950,7 +896,7 @@ void TutorialGame::DisplayPathfinding(int time, float force) {
 	}
 }
 
-GameObject* TutorialGame::AddCapsuleToWorld(const Vector3& position, float h,float r) {
+GameObject* TutorialGame::AddCapsuleToWorld(const Vector3& position, float h,float r, float inverseMass) {
 	GameObject* capsule = new GameObject();
 
 	CapsuleVolume* volume = new CapsuleVolume(h,r);
@@ -961,10 +907,10 @@ GameObject* TutorialGame::AddCapsuleToWorld(const Vector3& position, float h,flo
 	capsule->SetRenderObject(new RenderObject(&capsule->GetTransform(), capsuleMesh, nullptr, basicShader));
 	capsule->SetPhysicsObject(new PhysicsObject(&capsule->GetTransform(), capsule->GetBoundingVolume()));
 
-	capsule->GetPhysicsObject()->SetInverseMass(0);
+	capsule->GetPhysicsObject()->SetInverseMass(inverseMass);
 	capsule->GetPhysicsObject()->InitSphereInertia();
 
-	//capsule->GetRenderObject()->SetColour(Vector4(0, 1, 1, 1));
+	capsule->GetRenderObject()->SetColour(Vector4(0.5, 0.5, 1, 1));
 	//capsule->SetName(name);
 
 	world->AddGameObject(capsule);
@@ -993,4 +939,169 @@ GameObject* TutorialGame::AddOBBToWorld(const Vector3& position, Vector3 dimensi
 	world->AddGameObject(cube);
 
 	return cube;
+}
+
+void TutorialGame::CheckScorerecord(){
+	std::ifstream infile(Assets::DATADIR + "score.txt");
+
+	vector<int> record;
+	int score;
+	int time;
+	while (infile >> score) {
+		record.push_back(score);
+		infile >> time;
+		record.push_back(time);
+	}
+	infile.close();
+	int length = record.size() / 2;
+	int no = (length > 10) ? 10 : length;
+	for (int i = 0; i < 10; i++) {
+		if (i < no) {
+			scoreRecord[i][0] = record.at(2 * i);
+			scoreRecord[i][1] = record.at(2 * i + 1);
+		}
+		else {
+			scoreRecord[i][0] = NULL;
+			scoreRecord[i][1] = NULL;
+		}
+	}
+	for (int i = 0; i < length; i++) {
+		if (i < no) {
+			for (int j = i + 1; j < no; j++) {
+				if (scoreRecord[i][0] < scoreRecord[j][0]) {
+					int a = scoreRecord[i][0];
+					int b = scoreRecord[i][1];
+					scoreRecord[i][0] = scoreRecord[j][0];
+					scoreRecord[i][1] = scoreRecord[j][1];
+					scoreRecord[j][0] = a;
+					scoreRecord[j][1] = b;
+				}
+				else if (scoreRecord[i][0] == scoreRecord[j][0]) {
+					if (scoreRecord[i][1] > scoreRecord[j][1]) {
+						int a = scoreRecord[i][0];
+						int b = scoreRecord[i][1];
+						scoreRecord[i][0] = scoreRecord[j][0];
+						scoreRecord[i][1] = scoreRecord[j][1];
+						scoreRecord[j][0] = a;
+						scoreRecord[j][1] = b;
+					}
+				}
+			}
+		}
+		else {
+			if (record.at(2 * i) > scoreRecord[9][0]) {
+				scoreRecord[9][0] = record.at(2 * i);
+				scoreRecord[9][1] = record.at(2 * i + 1);
+			}
+			else if (record.at(2 * i) == scoreRecord[9][0]) {
+				if (record.at(2 * i + 1) < scoreRecord[9][1]) {
+					scoreRecord[9][0] = record.at(2 * i);
+					scoreRecord[9][1] = record.at(2 * i + 1);
+				}
+			}
+			else
+				continue;
+			for (int j = 8; j > 0; j--) {
+				if (record.at(2 * i) > scoreRecord[j][0]) {
+					int a = scoreRecord[j][0];
+					int b = scoreRecord[j][1];
+					scoreRecord[j][0] = record.at(2 * i);
+					scoreRecord[j][1] = record.at(2 * i + 1);
+					scoreRecord[j + 1][0] = a;
+					scoreRecord[j + 1][1] = b;
+				}
+				else if (record.at(2 * i) == scoreRecord[j][0]) {
+					if (record.at(2 * i + 1) < scoreRecord[j][1]) {
+						int a = scoreRecord[j][0];
+						int b = scoreRecord[j][1];
+						scoreRecord[j][0] = record.at(2 * i);
+						scoreRecord[j][1] = record.at(2 * i + 1);
+						scoreRecord[j + 1][0] = a;
+						scoreRecord[j + 1][1] = b;
+					}
+				}
+				else
+					break;
+			}
+		}
+	}
+	Debug::Print("Press Y back to main menu.", Vector2(25, 20), Debug::RED);
+	for (int i = 0; i < no; i++) {
+		Debug::Print(std::to_string(i+1) + " "+std::to_string(scoreRecord[i][0]) + " " + std::to_string(scoreRecord[i][1]), Vector2(40, 25 + i * 5), Debug::RED);
+	}
+	if (Window::GetKeyboard()->KeyPressed(KeyCodes::Y))
+		file = 0;
+}
+
+// there is no call
+
+void TutorialGame::InitGameExamples() {
+	AddGoatToWorld(Vector3(0, 5, 0));
+	//AddEnemyToWorld(Vector3(5, 5, 0));
+	//AddBonusToWorld(Vector3(10, 5, 0));
+}
+
+void TutorialGame::InitSphereGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, float radius) {
+	for (int x = 0; x < numCols; ++x) {
+		for (int z = 0; z < numRows; ++z) {
+			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing);
+			AddSphereToWorld(position, radius, 1.0f);
+		}
+	}
+	AddFloorToWorld(Vector3(0, -2, 0));
+}
+
+void TutorialGame::InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing) {
+	float sphereRadius = 1.0f;
+	Vector3 cubeDims = Vector3(1, 1, 1);
+
+	for (int x = 0; x < numCols; ++x) {
+		for (int z = 0; z < numRows; ++z) {
+			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing);
+
+			if (rand() % 2) {
+				AddCubeToWorld(position, cubeDims);
+			}
+			else {
+				AddSphereToWorld(position, sphereRadius);
+			}
+		}
+	}
+}
+
+void TutorialGame::InitCubeGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, const Vector3& cubeDims) {
+	for (int x = 1; x < numCols + 1; ++x) {
+		for (int z = 1; z < numRows + 1; ++z) {
+			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing);
+			AddCubeToWorld(position, cubeDims, 1.0f);
+		}
+	}
+}
+
+void TutorialGame::LockedObjectMovement() {
+	Matrix4 view = world->GetMainCamera().BuildViewMatrix();
+	Matrix4 camWorld = view.Inverse();
+
+	Vector3 rightAxis = Vector3(camWorld.GetColumn(0)); //view is inverse of model!
+
+	//forward is more tricky -  camera forward is 'into' the screen...
+	//so we can take a guess, and use the cross of straight up, and
+	//the right axis, to hopefully get a vector that's good enough!
+
+	Vector3 fwdAxis = Vector3::Cross(Vector3(0, 1, 0), rightAxis);
+	fwdAxis.y = 0.0f;
+	fwdAxis.Normalise();
+
+
+	if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
+		selectionObject->GetPhysicsObject()->AddForce(fwdAxis);
+	}
+
+	if (Window::GetKeyboard()->KeyDown(KeyCodes::DOWN)) {
+		selectionObject->GetPhysicsObject()->AddForce(-fwdAxis);
+	}
+
+	if (Window::GetKeyboard()->KeyDown(KeyCodes::NEXT)) {
+		selectionObject->GetPhysicsObject()->AddForce(Vector3(0, -10, 0));
+	}
 }
