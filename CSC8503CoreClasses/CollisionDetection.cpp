@@ -388,8 +388,10 @@ bool CollisionDetection::AABBCapsuleIntersection(
 	Transform sphereB;
 	sphereB.SetPosition(worldTransformA.GetPosition() - worldTransformA.GetOrientation() * Vector3(0, volumeA.GetHalfHeight(), 0));
 
-	if (AABBSphereIntersection(volumeB, worldTransformB, A, sphereA, collisionInfo) ||
-		AABBSphereIntersection(volumeB, worldTransformB, B, sphereB, collisionInfo)) {
+	if (AABBSphereIntersection(volumeB, worldTransformB, A, sphereA, collisionInfo)) {
+		return true;
+	}
+	if (AABBSphereIntersection(volumeB, worldTransformB, B, sphereB, collisionInfo)) {
 		return true;
 	}
 	if (AABBIntersection(volumeB, worldTransformB, aabb, worldTransformA, collisionInfo)) {
